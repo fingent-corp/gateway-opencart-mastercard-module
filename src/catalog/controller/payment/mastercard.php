@@ -17,8 +17,7 @@
 
 namespace Opencart\Catalog\Controller\Extension\Mastercard\Payment;
 
-class Mastercard extends \Opencart\System\Engine\Controller
-{
+class Mastercard extends \Opencart\System\Engine\Controller{
     const ORDER_CAPTURED = '15';
     const ORDER_VOIDED = '16';
     const ORDER_CANCELLED = '7';
@@ -36,7 +35,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
         $this->load->language('extension/mastercard/payment/mastercard');
         $this->load->model('extension/mastercard/payment/mastercard');
         $gatewayUri = $this->model_extension_mastercard_payment_mastercard->getGatewayUri();
-        $apiVersion = $this->model_extension_mastercard_payment_mastercard->getApiVersion();
         $integrationModel = $this->model_extension_mastercard_payment_mastercard->getIntegrationModel();
         if (!empty($this->session->data['order_id']) && !empty($this->session->data['currency']) && !empty($this->session->data['shipping_address'])) {
             try {
@@ -53,13 +51,17 @@ class Mastercard extends \Opencart\System\Engine\Controller
         }
         if (empty($data['error_session'])) {
             if ($integrationModel === 'hostedcheckout') { 
+
                 $cacheBust = (int)round(microtime(true));               
                 $data['hosted_checkout_js'] = $gatewayUri . 'static/checkout/checkout.min.js?_='.$cacheBust;
                 $data['checkout_interaction'] = $this->config->get('payment_mastercard_hc_type');
                 $data['completeCallback'] = $this->url->link('extension/mastercard/payment/mastercard.processHostedCheckout', '', false);
                 $data['cancelCallback'] = $this->url->link('extension/mastercard/payment/mastercard.cancelCallback', '', true);
                 $data['errorCallback'] = $this->url->link('extension/mastercard/payment/mastercard.errorCallback', '', true);   
+                
             } 
+
+
         }
         if ($integrationModel === 'hostedcheckout') {
             if (isset($data['configured_variables'])) {
@@ -79,12 +81,13 @@ class Mastercard extends \Opencart\System\Engine\Controller
                     $jsonData = json_encode($data);
                     $data['jsonData'] = $jsonData;
                     setcookie('OCSESSID', $data['OCSESSID'], time() + 24 * 3600, '/');
+                    $this->document->addScript($data['hosted_checkout_js']);
                     return $this->load->view('extension/mastercard/payment/mgps_hosted_checkout', $data);
                 }
             }
         }           
     }
-
+    
     /**
      * @param $route
      */
@@ -94,10 +97,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
             return;
         }
         $this->load->model('extension/mastercard/payment/mastercard');
-        $gatewayUri = $this->model_extension_mastercard_payment_mastercard->getGatewayUri();
-        $apiVersion = $this->model_extension_mastercard_payment_mastercard->getApiVersion();
-        $integrationModel = $this->model_extension_mastercard_payment_mastercard->getIntegrationModel();
-        $apiUsername = $this->model_extension_mastercard_payment_mastercard->getMerchantId();
     }
 
     /**
@@ -187,7 +186,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
                
                 $this->load->model('catalog/product');
                 foreach ($this->cart->getProducts() as $product) {
-                    $productModel = $this->model_catalog_product->getProduct($product['product_id']);
                     $items = [];
                     $description = [];
                     foreach ($product['option'] as $option) {
@@ -223,14 +221,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
             $totals = [];
             $taxes = $this->cart->getTaxes();
             $total = 0;
-    
-            // Because __call can not keep var references so we put them into an array.
-            $totalData = [
-                'totals' => &$totals,
-                'taxes' => &$taxes,
-                'total' => &$total
-            ];
-    
             $this->load->model('setting/extension');
     
             // Display prices
@@ -390,21 +380,7 @@ class Mastercard extends \Opencart\System\Engine\Controller
                     if (!empty($paymentAddress['address_2'])) {
                         $billingAddress['address']['street2'] = substr($paymentAddress['address_2'], 0, 100);
                     }
-            }
-        else{
-            $order_id = $this->session->data['order_id'];
-            $query = $this->db->query("SELECT * FROM `oc_order` WHERE `order_id` = $order_id");
-            $shippingData = $query->row;
-            $addressArray = array(
-                'address' => array(
-                    'city' => $shippingData['shipping_city'],
-                    'country' => $shippingData['shipping_country'],
-                    'postcodeZip' => $shippingData['shipping_postcode'],
-                    'stateProvince' => $shippingData['shipping_zone'],
-                    'street' => $shippingData['shipping_address_1'],
-                )
-            );  
-        }     
+            }    
     }
 
         return $billingAddress;
@@ -500,7 +476,9 @@ class Mastercard extends \Opencart\System\Engine\Controller
         setcookie("OCSESSID", "", time() - 1, "/");
         $this->load->language('extension/mastercard/payment/mastercard');
         $this->load->model('extension/mastercard/payment/mastercard');
+        $this->document->addScript('view/javascript/mastercard/custom.js');
         $requestIndicator = $this->request->get['resultIndicator'];
+        $mgpsSuccessIndicator =  $_COOKIE['mgps_sucesss_indicator'];;
         if (isset($_COOKIE['mgps_order']) && isset($_COOKIE['mgps_sucesss_indicator'])) {
             $mgpsSuccessIndicator = $_COOKIE['mgps_sucesss_indicator'];
             $orderId = $_COOKIE['mgps_order'];
@@ -512,7 +490,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
             setcookie('mgps_order', '', time() - 3600, '/');
             setcookie('mgps_sucesss_indicator', '', time() - 3600, '/');
         }
-        $requestSessionVersion = $this->request->get['sessionVersion'];
         try {
             if ($mgpsSuccessIndicator !== $requestIndicator) {
                 throw new \Exception($this->language->get('error_indicator_mismatch'));
@@ -522,17 +499,16 @@ class Mastercard extends \Opencart\System\Engine\Controller
                 throw new \Exception($this->language->get('error_payment_declined'));
             }
             $txn = $retrievedOrder['transaction'][0];
-            $transactionId = isset($txn['authentication']['3ds']['transactionId']) ? $txn['authentication']['3ds']['transactionId'] : $txn['transaction']['id'];
+            $transactionId = $txn['authentication']['3ds']['transactionId'] ?? $txn['transaction']['acquirer']['transactionId'] ?? $txn['transaction']['transactionId'] ?? $txn['transaction']['id'] ?? '';        
             $transactionAmount    =  $txn['transaction']['amount'];
-            $transactionCurrency  = $txn['transaction']['currency'];
             $transactionStatus    = $txn['order']['status'];
             $transactionOrderID   = $txn['order']['id'];
             $merchantName         = $txn['merchant'];
             $merchantId           = $txn['transaction']['acquirer']['merchantId'];
             $customer_email       = $txn['customer']['email'];
-            $customer_name        = $txn['customer']['firstName'] . ' ' . $txn['customer']['lastName'];
-            $email_status         = "Payment" . '' . $transactionStatus ;
-            $transactionType      = "";
+            $firstName = $txn['customer']['firstName'] ?? $retrievedOrder['shipping']['contact']['firstName'] ?? '';
+            $lastName  = $txn['customer']['lastName'] ?? $retrievedOrder['shipping']['contact']['lastName'] ?? '';
+            $customer_name = trim($firstName . ' ' . $lastName);
             $this->processOrder($retrievedOrder, $txn);
             $this->db->query("INSERT INTO ".DB_PREFIX."mgps_order_transaction SET order_id ='".$this->session->data['order_id'] ."', oc_order_id ='".$transactionOrderID ."', transaction_id = '".$transactionId."', type = '".$transactionStatus."', merchant_name = '".$merchantName."', merchant_id = '".$merchantId."' ,status = '".$transactionStatus ."', amount = '".$transactionAmount."', date_added = NOW()");
             if ($this->config->get('config_mail_engine')) {
@@ -540,39 +516,49 @@ class Mastercard extends \Opencart\System\Engine\Controller
             }
             $this->cart->clear();
             $this->clearTokenSaveCardSessionData();
-            $this->response->redirect($this->url->link('checkout/success', '', true));
             $this->model_extension_mastercard_payment_mastercard->clearCheckoutSession();
+            echo "<script>
+                sessionStorage.clear();
+                window.location.href = '" . $this->url->link('checkout/success', '', true) . "';
+            </script>";
+            exit;
         } catch (\Exception $e) {
+           
             $this->session->data['error'] = $e->getMessage();
             $this->addOrderHistory($orderId, self::ORDER_FAILED, $e->getMessage());
             $this->response->redirect($this->url->link('checkout/checkout', '', true));
         }
     }
 
-    private function sendCustomEmail($orderId,$reciever_address, $subject ,  $customer_name ) {
+    private function sendCustomEmail($orderId, $reciever_address, $subject, $customer_name) {
         $data['order_id'] = $orderId;
-        $data['receiver_address']  = $reciever_address;
-        $data['order_status']  =$subject;
-        $data['customer_name']  =$customer_name;
+        $data['receiver_address'] = $reciever_address;
+        $data['order_status'] = $subject;
+        $data['customer_name'] = $customer_name;
+    
         if ($this->config->get('config_mail_engine')) {
-                $mail_option = [
-                    'parameter'     => $this->config->get('config_mail_parameter'),
-                    'smtp_hostname' => $this->config->get('config_mail_smtp_hostname'),
-                    'smtp_username' => $this->config->get('config_mail_smtp_username'),
-                    'smtp_password' => html_entity_decode($this->config->get('config_mail_smtp_password'), ENT_QUOTES, 'UTF-8'),
-                    'smtp_port'     => $this->config->get('config_mail_smtp_port'),
-                    'smtp_timeout'  => $this->config->get('config_mail_smtp_timeout')
-                ];
-            
-                $mail = new \Opencart\System\Library\Mail($this->config->get('config_mail_engine'), $mail_option);
-                $mail->setTo($reciever_address);
-                $mail->setFrom($this->config->get('config_email'));
-                $mail->setSender($this->config->get('config_name'));
-                $mail->setSubject(html_entity_decode("Payment" . ' '. ucwords(strtolower(str_replace('_', ' ', $subject))), ENT_QUOTES, 'UTF-8'));
-                $mail->setHtml($this->load->view('extension/mastercard/payment/mgps_hosted_authorize_mail', $data));
-                $mail->send();
-            }
+            $mail_option = [
+                'parameter'     => $this->config->get('config_mail_parameter'),
+                'smtp_hostname' => $this->config->get('config_mail_smtp_hostname'),
+                'smtp_username' => $this->config->get('config_mail_smtp_username'),
+                'smtp_password' => html_entity_decode($this->config->get('config_mail_smtp_password'), ENT_QUOTES, 'UTF-8'),
+                'smtp_port'     => $this->config->get('config_mail_smtp_port'),
+                'smtp_timeout'  => $this->config->get('config_mail_smtp_timeout')
+            ];
+    
+            $mail = new \Opencart\System\Library\Mail($this->config->get('config_mail_engine'), $mail_option);
+            $mail->setTo($reciever_address);
+            $mail->setFrom($this->config->get('config_email'));
+            $mail->setSender($this->config->get('config_name'));
+    
+            // Use sprintf to combine the strings
+            $mail->setSubject(html_entity_decode(sprintf("Payment %s", ucwords(strtolower(str_replace('_', ' ', $subject)))), ENT_QUOTES, 'UTF-8'));
+    
+            $mail->setHtml($this->load->view('extension/mastercard/payment/mgps_hosted_authorize_mail', $data));
+            $mail->send();
+        }
     }
+    
 
     public function callback(){
         $this->load->language('extension/mastercard/payment/mastercard');
@@ -642,8 +628,8 @@ class Mastercard extends \Opencart\System\Engine\Controller
                 throw new \Exception($error);
             }
         } catch (\Exception $e) {
-            $this->model_extension_mastercard_payment_mastercard->log('Gateway Error: ' . $e->getMessage());
-            header('HTTP/1.1 500 ' . 'Gateway Error');
+            $this->model_extension_mastercard_payment_mastercard->log("Gateway Error: {$e->getMessage()}");
+            header("HTTP/1.1 500 Gateway Error");
             exit;
         }
 
@@ -664,16 +650,9 @@ class Mastercard extends \Opencart\System\Engine\Controller
         if (isset($response['risk']['response'])) {
             $risk = $response['risk']['response'];
             switch ($risk['gatewayCode']) {
-                case 'REJECTED':
-                    if ($order['order_status_id'] != $this->config->get('payment_mastercard_declined_status_id')) {
-                        $message = sprintf($this->language->get('text_risk_review_rejected'), $risk['gatewayCode'], $response['transaction']['id'], $response['transaction']['type']);
-                    }
-                    break;
                 case 'REVIEW_REQUIRED':
                     if (!empty($risk['review']['decision']) && in_array($risk['review']['decision'], ['NOT_REQUIRED', 'ACCEPTED'])) {
                         $this->setOrderHistoryTransactionType($order, $response);
-                    } else {
-                        $message = sprintf($this->language->get('text_risk_review_required'), $risk['gatewayCode'], $response['transaction']['id'], $response['transaction']['type']);
                     }
                     break;
                 default:
@@ -696,9 +675,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
             case 'AUTHORIZATION_UPDATE':
                 if ($order['order_status_id'] != $this->config->get('payment_mastercard_pending_status_id')) {
                     $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_authorization'), $order['order_status_id']));
-                } else {
-                    $message = sprintf($this->language->get('text_webhook_authorize_capture'), $response['transaction']['type'], $response['result'], $response['transaction']['id'], $response['transaction']['authorizationCode']);
-                    $orderStatusId = $this->config->get('payment_mastercard_approved_status_id');
                 }
                 break;
 
@@ -706,9 +682,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
             case 'CAPTURE':
                 if ($order['order_status_id'] != $this->config->get('payment_mastercard_approved_status_id') && $order['order_status_id'] != $this->config->get('payment_mastercard_pending_status_id')) {
                     $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_capture'), $order['order_status']));
-                } else {
-                    $message = sprintf($this->language->get('text_webhook_authorize_capture'), $response['transaction']['type'], $response['result'], $response['transaction']['id'], $response['transaction']['authorizationCode']);
-                    $orderStatusId = self::ORDER_CAPTURED;
                 }
                 break;
 
@@ -717,8 +690,7 @@ class Mastercard extends \Opencart\System\Engine\Controller
                 if ($order['order_status_id'] != self::ORDER_CAPTURED) {
                     $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_refund'), $order['order_status']));
                 } else {
-                    $message = sprintf($this->language->get('text_webhook_refund_void'), $response['transaction']['type'], $response['result'], $response['transaction']['id']);
-                    $orderStatusId = self::ORDER_REFUNDED;
+                    $order['order_status'] = self::ORDER_REFUNDED;
                 }
                 break;
 
@@ -729,23 +701,18 @@ class Mastercard extends \Opencart\System\Engine\Controller
                 if ($order['order_status_id'] != $this->config->get('payment_mastercard_approved_status_id')) {
                     $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_void'), $order['order_status']));
                 } else {
-                    $message = sprintf($this->language->get('text_webhook_refund_void'), $response['transaction']['type'], $response['result'], $response['transaction']['id']);
-                    $orderStatusId = self::ORDER_VOIDED;
+                    $order['order_status'] = self::ORDER_VOIDED;
                 }
                 break;
 
             case 'CANCELLED':
                 if ($order['order_status_id'] != self::ORDER_CANCELLED) {
-                    $message = sprintf($this->language->get('text_webhook_refund_void'), $response['transaction']['type'], $response['result'], $response['transaction']['id']);
-                    $orderStatusId = self::ORDER_CANCELLED;
+                    $order['order_status'] = self::ORDER_CANCELLED;
                 }
                 break;
 
             default:
-                if ($order['order_status_id'] != self::ORDER_CANCELLED) {
-                    $orderStatusId = self::ORDER_CANCELLED;
-                    $message = sprintf($this->language->get('text_webhook_unknown'), $response['transaction']['type']);
-                }
+                $order['order_status'] = self::ORDER_CANCELLED;
                 break;
         }
     }
@@ -814,27 +781,6 @@ class Mastercard extends \Opencart\System\Engine\Controller
         return $tokensResult->row;
     }
 
-    /**
-     * Up session from get parameter
-     *
-     * Known issue with MasterCard API
-     */
-    private function restartOCSession() {
-        if (empty($this->request->get['OCSESSID'])) {
-            return;
-        }
-        $this->session->start($this->request->get['OCSESSID']);
-
-        setcookie(
-            $this->config->get('session_name'),
-            $this->session->getId(),
-            ini_get('session.cookie_lifetime'),
-            ini_get('session.cookie_path'),
-            ini_get('session.cookie_domain')
-        );
-
-        (new ControllerStartupStartup($this->registry))->index();
-    }
     
     /**
      * Clear values of Hosted Payment Form
@@ -903,6 +849,7 @@ class Mastercard extends \Opencart\System\Engine\Controller
         $uri = $this->model_extension_mastercard_payment_mastercard->getApiUri() . '/order/' . $orderId;
 
         $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('GET', $uri);
+        
         return $response;
     }
 

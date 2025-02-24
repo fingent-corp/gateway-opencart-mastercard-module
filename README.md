@@ -15,6 +15,11 @@ For customer support: https://mpgsfgs.atlassian.net/servicedesk/customer/portals
 
 ## Compatibility
 
+Version v1.3.2
+- Added PayPal (Supported in Hosted Checkout Only).
+- Updated Mastercard API Version to 100.
+- The plugin will capture download count from GitHub and track active installations, including Store Name, Store URL, and Country, once Test Mode is disabled and live credentials are saved.
+
 Version v1.3.1
 - Implemented a notification feature to alert the OpenCart administrator whenever a new version is launched on GitHub.
 - Updated Mastercard API Version to 78.
@@ -26,6 +31,55 @@ Version v1.3.0
 - Added Refund Option.
 - Added Partial Refund Option.
 
+## Customer Information Shared with Gateway
+
+### This module shares the following customer information with the gateway:
+
+- Customer Billing and Shipping Address
+- Customer Name
+- Customer Phone Number
+- Customer Email Address
+- Cart Line Items (optional)
+
+##  Mastercard Payment Module Features
+
+The Mastercard Payment Module is packed with tools to make payment processing easier and safer for your business. Here's a quick look at its main features:
+
+## 1. Payment Methods
+Defines the types of payment options supported, which are:
+
+### • Card Payments
+Easily and securely accept both credit and debit card payments. This feature works with all major card brands, making it simple and reliable for your customers to pay.
+
+### • Google Pay (Supported in Hosted Checkout Only)
+With Google Pay, customers can quickly and easily pay on the hosted checkout page. To enable this option, ensure your Merchant Identification (MID) is configured for Google Pay. This makes payments smooth and hassle-free, allowing customers to complete transactions with just a few taps.
+
+### • PayPal (Supported in Hosted Checkout Only)
+With PayPal, customers can make payments quickly and effortlessly through the hosted checkout page. To use this option, ensure that your Merchant Identification (MID) is set up for PayPal transactions. Once enabled, this feature provides a seamless and hassle-free payment experience, allowing customers to complete their purchases with just a few simple taps.
+
+## 2. Checkout and Payment Integration
+This feature focuses on the method of collecting payment details from customers:
+
+### • Hosted Checkout
+This feature lets your customers enter their payment details on a readymade secure checkout page provided directly by Mastercard. It keeps sensitive information safe while giving your customers a smooth and hassle-free payment experience.
+
+## 3. Fraud Prevention and Security
+This feature enhances security and protects against fraud:
+
+### • Address Verification Service (AVS)
+AVS helps prevent fraud by checking the billing address provided during a payment to make sure it matches the one on file with the cardholder's bank. This helps confirm that the person making the payment is the actual cardholder. To use AVS, it must be activated on your Merchant Identification (MID).
+
+## 4. Transaction Management
+These features support the processing and management of transactions:
+
+### • Capture Payments
+This feature lets you manually process payments for authorized orders directly from your system. It gives you more control over how payments are handled.
+
+### • Full Refunds
+You can refund the entire amount of the transaction back to the customer's account. This is helpful when a complete order needs to be canceled or returned.
+
+### • Partial Refunds
+This feature lets you refund only part of an order, giving the customer the specific amount they are entitled to.
 
 ## Installation
 1. Make a backup of your site before applying new mods etc.
@@ -43,6 +97,10 @@ Please proceed with the following actions to configure the payment method:
 4. Scroll down until you find the 'Mastercard Payment Gateway Services' extension, and click on the Edit button.
 5. Fill up the forms with all required fields.
 6. After completing all required fields, click the 'Save' button to save the configurations. Once the form is successfully saved, it will redirect you to the 'Extensions' page.
+
+## Disclaimer!
+
+Starting from version 1.3.2, the plugin will collect analytics data, including the plugin download count from GitHub and the active installation count. The Active count, Store Name, Store URL, and the Country configured in the OpenCart Admin page will be captured once the Test Mode is set as No and the Live Merchant ID and Live API Password are saved in the configuration page.
 
 
 ## Hosted Payments

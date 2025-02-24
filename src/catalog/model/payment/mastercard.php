@@ -24,10 +24,10 @@ class Mastercard extends \Opencart\System\Engine\Model {
     const API_ASIA = 'api_ap';
     const API_MTF = 'api_mtf';
     const API_OTHER = 'api_other';
-    const MODULE_VERSION = '1.3.1';
-    const API_VERSION = '78';
+    const MODULE_VERSION = '1.3.2';
+    const API_VERSION = '100';
     const DEBUG_LOG_FILENAME = 'mpgs_gateway.log';
-    const THREEDS_API_VERSION = '1.3.1';
+    const THREEDS_API_VERSION = '1.3.2';
         
     /**
      * getMethods
@@ -83,16 +83,14 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @return mixed
     */
 
-    public function getIntegrationModel()
-    {
+    public function getIntegrationModel(){
         return $this->config->get('payment_mastercard_integration_model');
     }
 
     /**
      * @return string
      */
-    public function getGatewayUri()
-    {
+    public function getGatewayUri(){
 
         $gatewayUrl = ''; // Initialize $gatewayUrl before the conditional statements
         $apiGateway = $this->config->get('payment_mastercard_api_gateway');
@@ -106,10 +104,8 @@ class Mastercard extends \Opencart\System\Engine\Model {
             $gatewayUrl = 'https://mtf.gateway.mastercard.com/';
         } elseif ($apiGateway === self::API_OTHER) {
             $url = $this->config->get('payment_mastercard_api_gateway_other');
-            if (!empty($url)) {
-                if (substr($url, -1) !== '/') {
-                    $url = $url . '/';
-                }
+            if (!empty($url) && substr($url, -1) !== '/') {
+                $url = $url . '/';
             }
             $gatewayUrl = $url;
         }
@@ -120,16 +116,14 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function getApiUri()
-    {
+    public function getApiUri(){
         return $this->getGatewayUri() . 'api/rest/version/' . $this->getApiVersion() . '/merchant/' . $this->getMerchantId();
     }
 
     /**
      * @return mixed
      */
-    public function getMerchantId()
-    {
+    public function getMerchantId(){
         if ($this->isTestModeEnabled()) {
             
             return $this->config->get('payment_mastercard_test_merchant_id');
@@ -142,8 +136,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @return mixed
     **/
 
-    public function getApiPassword()
-    {
+    public function getApiPassword(){
         if ($this->isTestModeEnabled()) {
             return $this->config->get('payment_mastercard_test_api_password');
         } else {
@@ -155,8 +148,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
     * @return mixed
     */
 
-    public function getWebhookSecret()
-    {
+    public function getWebhookSecret(){
         if ($this->isTestModeEnabled()) {
             return $this->config->get('payment_mpgs_hosted_checkout_test_notification_secret');
         } else {
@@ -167,24 +159,21 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function getApiVersion()
-    {
+    public function getApiVersion(){
         return self::API_VERSION;
     }
 
     /**
      * @return mixed
      */
-    public function isTestModeEnabled()
-    {
+    public function isTestModeEnabled(){
         return $this->config->get('payment_mastercard_test');
     }
 
     /**
      * @return bool
      */
-    public function isDebugModeEnabled()
-    {
+    public function isDebugModeEnabled(){
         if ($this->isTestModeEnabled()) {
             return $this->config->get('payment_mpgs_hosted_checkout_debug') === '1';
         }
@@ -194,16 +183,14 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function threeDSApiVersion()
-    {
+    public function threeDSApiVersion(){
         return self::THREEDS_API_VERSION;
     }
 
     /**
      * @return string
      */
-    public function getPaymentAction()
-    {
+    public function getPaymentAction(){
         $paymentAction = $this->config->get('payment_mastercard_initial_transaction');
         if ($paymentAction === 'pay') {
             return 'PURCHASE';
@@ -215,8 +202,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function buildPartnerSolutionId()
-    {
+    public function buildPartnerSolutionId(){
         return 'OC_' . VERSION . '_MASTERCARD_' . self::MODULE_VERSION;
     }
 
@@ -226,8 +212,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @param array $data
      * @return mixed
      */
-    public function apiRequest($method, $uri, $data = [])
-    {
+    public function apiRequest($method, $uri, $data = []){
         $userId = 'merchant.' . $this->getMerchantId();
         $requestLog = 'Send Request: "' . $method . ' ' . $uri . '" ';
         if (!empty($data)) {
@@ -268,10 +253,10 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * Clear data from session
      */
-    public function clearCheckoutSession()
-    {
+    public function clearCheckoutSession(){
         unset($this->session->data['mpgs_hosted_checkout']);
         unset($this->session->data['mpgs_hosted_session']);
+        unset($this->session->data['mpgs_hosted_checkout']['successIndicator']);
         unset($this->session->data['mpgs_hosted_checkout']['successIndicator']);
     }
 
@@ -279,8 +264,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @param $customerId
      * @return mixed
      */
-    public function getCustomerTokens($customerId)
-    {
+    public function getCustomerTokens($customerId){
         $tokensResult = $this->db->query("SELECT * FROM `" . DB_PREFIX . "mpgs_hpf_token` WHERE customer_id='" . (int)$customerId . "'");
         return $tokensResult->rows;
     }
@@ -288,8 +272,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @param $message
      */
-    public function log($message)
-    {
+    public function log($message){
         if ($this->isDebugModeEnabled()) {
             $this->debugLog = new Log(self::DEBUG_LOG_FILENAME);
             $this->debugLog->write($message);
@@ -300,5 +283,4 @@ class Mastercard extends \Opencart\System\Engine\Model {
 		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "extension WHERE `type` = '" . $this->db->escape($type) . "'");
 		return $query->rows;
 	}
-
 }

@@ -1,16 +1,20 @@
 {% for txn in mgps_hosted_checkout_order.transactions %}
 <div id="mgps_transaction_msg_"></div>
 <table class="table table-bordered">
+	<caption></caption>
 	<thead>
 		<tr>
-			<td colspan="2">
+			<th id="field-header-field" colspan="2">
 				<h2>{{ text_payment_txn_info }}</h2>
-			</td>
+			</th>
+		</tr>
+		<tr>
+			<th id="field-header" scope="col">{{ text_field }}</th>
+			<th id="value-header" scope="col">{{ text_value }}</th>
 		</tr>
 	</thead>
 	<tbody>
 		<tr>
-
 			<td>{{ text_date_created }}</td>
 			<td>{{ txn.date_added }}</td>
 		</tr>
@@ -22,27 +26,23 @@
 			<td>{{ text_txn_ref }}</td>
 			<td>{{ txn.transaction_id }}</td>
 		</tr>
-
 		<tr>
 			<td>{{ text_txn_status }}</td>
 			<td>{{ txn.status|replace({'_': ' '})|title }}</td>
 		</tr>
-
 		<tr>
 			<td>{{ text_txn_amount }}</td>
-			<td> {{currency}}{{ txn.amount | number_format(2, '.', ',') }}</td>
+			<td>{{ currency }}{{ txn.amount | number_format(2, '.', ',') }}</td>
 		</tr>
 		{% if txn.refunded_amount %}
 		<tr>
 			<td>{{ text_refunded_amount }}</td>
-			<td> {{currency}}{{ txn.refunded_amount | number_format(2, '.', ',') }}</td>
+			<td>{{ currency }}{{ txn.refunded_amount | number_format(2, '.', ',') }}</td>
 		</tr>
 		{% endif %}
 	</tbody>
-
 </table>
-
-<fieldset>
+<div>
 	<div class="parent_wrapper">
 		{% if txn.status == 'AUTHORIZED'%}
 		<div class="text-right refund_button_container">
@@ -139,7 +139,7 @@
 		</div>
 		{% endif %}
 
-</fieldset>
+	</div>
 {% endfor %}
 
 <script>
