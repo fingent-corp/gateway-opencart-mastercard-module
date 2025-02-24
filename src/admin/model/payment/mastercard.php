@@ -17,28 +17,26 @@
 
 namespace Opencart\Admin\Model\Extension\MasterCard\Payment;
 
-class MasterCard extends \Opencart\System\Engine\Model
-{
-    public function install()
-    {
+class MasterCard extends \Opencart\System\Engine\Model{
+    public function install() {
         $this->db->query("
-			CREATE TABLE IF NOT EXISTS `".DB_PREFIX."mgps_order_transaction` (
-			  `mgps_order_transaction_id` INT(11) NOT NULL AUTO_INCREMENT,
-              `order_id` varchar(255) NOT NULL,
-              `oc_order_id` varchar(255) NOT NULL,
-			  `transaction_id` varchar(255),
-			  `date_added` DATETIME NOT NULL,
-			  `type` varchar(255) DEFAULT NULL,
-              `merchant_name` varchar(255) DEFAULT NULL,
-              `merchant_id` varchar(255) DEFAULT NULL,
-			  `status` varchar(255) DEFAULT NULL,
-			  `amount` varchar(255) NOT NULL,
-              `refunded_amount` varchar(255) DEFAULT NULL,
-			  PRIMARY KEY (`mgps_order_transaction_id`)
-			) ENGINE=MyISAM DEFAULT COLLATE=utf8_general_ci;
+            CREATE TABLE IF NOT EXISTS `".DB_PREFIX."mgps_order_transaction` (
+                `mgps_order_transaction_id` INT(11) NOT NULL AUTO_INCREMENT,
+                `order_id` varchar(255) NOT NULL,
+                `oc_order_id` varchar(255) NOT NULL,
+                `transaction_id` varchar(255),
+                `date_added` DATETIME NOT NULL,
+                `type` varchar(255) DEFAULT NULL,
+                `merchant_name` varchar(255) DEFAULT NULL,
+                `merchant_id` varchar(255) DEFAULT NULL,
+                `status` varchar(255) DEFAULT NULL,
+                `amount` varchar(255) NOT NULL,
+                `refunded_amount` varchar(255) DEFAULT NULL,
+                PRIMARY KEY (`mgps_order_transaction_id`)
+            ) ENGINE=MyISAM DEFAULT COLLATE=utf8_general_ci;
         ");
     }
-
+    
     public function deleteEvents(): void{
         $this->load->model('setting/event');
     
@@ -103,7 +101,7 @@ class MasterCard extends \Opencart\System\Engine\Model
         $this->db->query("INSERT INTO `" . DB_PREFIX . "order_history` SET order_id = '" . (int)$order_id . "', order_status_id = '" . (int)$order_status_id . "', notify = '" . (int)$notify . "', comment = '" . $this->db->escape($comment) . "', date_added = NOW()");
     }
 
-    public function getOrderStatusIdByName($statusName) {
+    public function getOrderStatusIdByName($statusName){
         $query = $this->db->query("SELECT order_status_id FROM " . DB_PREFIX . "order_status WHERE name = '" . $this->db->escape($statusName) . "'");
         if ($query->num_rows) {
             return $query->row['order_status_id'];
@@ -125,12 +123,10 @@ class MasterCard extends \Opencart\System\Engine\Model
         return $transactions;
     }
 
-    protected function rowTxn($row){
-        $amount = $row['amount'];
-        $row['amount'] = $row['amount'];
-
+    protected function rowTxn($row) {
         return $row;
     }
+    
 
     public function dropTable(){
         $this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "mpgs_hpf_token`");
@@ -148,13 +144,4 @@ class MasterCard extends \Opencart\System\Engine\Model
     public function isTestModeEnabled(){
         return $this->config->get('payment_mastercard_test');
     }
-
-
-
-
-
-
-    
-
-
 }

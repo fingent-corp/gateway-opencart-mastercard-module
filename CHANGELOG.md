@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2025-24-02
+### Updated
+- Updated Mastercard API Version to 100.
+### Enhancements
+- Added PayPal (Supported in Hosted Checkout Only).
+- The plugin will capture download count from GitHub and track active installations, including Store Name, Store URL, and Country, once Test Mode is disabled and live credentials are saved.
+
 ## [1.3.1] - 2024-20-03
 ### Updated
 - Updated Mastercard API Version to 78.

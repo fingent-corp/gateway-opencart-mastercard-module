@@ -1,121 +1,135 @@
-{#
-   Copyright (c) 2023 Mastercard
+{% if checkout_interaction == 'modal' %}
+    <input id="embeded_payment_button" type="button" value="Confirm Order" class="btn btn-primary" onclick="loadCheckoutLibrary(); Checkout.showEmbeddedPage('#embed-target');" />
+{% else %}
+    <input id="redirect_payment_button" type="button" value="Confirm Order" class="btn btn-primary" onclick="loadCheckoutLibraryPaymentPage();" />
+{% endif %}
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+<div id="embed-target"></div>
 
-   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
- #}
-
- <script type="text/javascript" src="extension/mastercard/catalog/view/javascript/mgps.js"></script>
-
-
-    <div id="embed-target"></div>
-    <script src="{{ hosted_checkout_js }}"
-            data-complete="{{ completeCallback }}"
-            data-error="errorCallback"
-            data-cancel="cancelCallback"
-            data-beforeRedirect="beforeRedirect"
-            data-afterRedirect="afterRedirect"
-            >
-    </script>
-
-    <script>
-        function cancelCallback(){
-            console.log("Cancelled Order");
-        }
-    </script>
-
-    <div class="buttons">
-        <div class="pull-right">
-            {% if checkout_interaction == 'modal' %}
-                <script>sessionKeysToClear.push('HostedCheckout_sessionId'); </script>
-                <input id="embeded_payment_button" type="button" value="{{ button_confirm }}" class="btn btn-primary" onclick="loadCheckoutLibrary();" />
-            {% else %}
-                <script> sessionKeysToClear.push('HostedCheckout_embedContainer'); </script>
-                <input id="redirect_payment_button" type="button" value="{{ button_confirm }}" class="btn btn-primary" onclick="loadCheckoutLibraryPaymentPage();" />
-            {% endif %}
-        </div>
-    </div>
-    <style>
-    .d-none{
-        display: none !important;
-    }
-    </style>
+<script>
+    var checkoutLoaded = false;
+    var checkoutConfigured = false;
+    var hosted_checkout_js = "{{ hosted_checkout_js }}";  // Get the hosted checkout JS URL from Twig variable
+    var jsonData = {{ jsonData|raw }};
     
+    // Function to initialize Checkout once the library is loaded
+    function initializeCheckout() {
+        setCookie('mgps_sucesss_indicator', jsonData.success_indicator, 5);
+        setCookie('mgps_order', jsonData.mgps_order_id, 5);
+        setCookie('mgps_OCSESSID', jsonData.OCSESSID, 5);
+        setCookie('order_id', jsonData.order_id, 5);
+        cleanupBrowserSession();
+        Checkout.configure({
+            session: {
+                id: jsonData.session_id
+            }
+        });
+        checkoutConfigured = true;
+    }
 
-<script type="text/javascript">
-var jsonData = {{ jsonData|raw }};
-var checkoutLoaded = false;
-function initializeCheckout() {
-    setCookie('mgps_sucesss_indicator', jsonData.success_indicator, 5);
-    setCookie('mgps_order', jsonData.mgps_order_id, 5);
-    setCookie('mgps_OCSESSID', jsonData.OCSESSID, 5);
-    setCookie('order_id', jsonData.order_id, 5);
-    cleanupBrowserSession();
-    Checkout.configure({
-        session: {
-            id: jsonData.session_id
-        }
-    });
-    checkoutConfigured = true;
-}
-var hosted_checkout_js = "{{ hosted_checkout_js }}";
-var checkoutLoaded = false;
-var checkoutConfigured = false;
+    // Function to load the Checkout library dynamically
+    function loadScript(src, onloadCallback) {
+        var script = document.createElement('script');
+        script.src = src;
+        script.onload = function() {
+            checkoutLoaded = true;
+            onloadCallback();
+        };
+        document.head.appendChild(script);
+    }
 
-function loadCheckoutLibrary() {
+    // Function to clear the embed target area
+    function clearEmbedTarget() {
+        var embedTarget = document.getElementById('embed-target');
+        embedTarget.innerHTML = ''; 
+    }
 
-    clearEmbedTarget();
-    checkoutLoaded = false; 
-    checkoutConfigured = false; 
-    $('#embeded_payment_button').val("Loading...");
+    // Function to load Checkout library and show embedded page
+    function loadCheckoutLibrary() {
+        clearEmbedTarget();
+        checkoutLoaded = false; 
+        checkoutConfigured = false; 
+        $('#embeded_payment_button').val("Loading...");
+        
         loadScript(hosted_checkout_js, function() {
             initializeCheckout();
-                showEmbeddedPage('#embed-target');
-                $("#embeded_payment_button").addClass('d-none')
-                $('.bubbles').addClass('d-none');
-            });
-}
-
-function loadCheckoutLibraryPaymentPage() {
-    $('#embeded_payment_button').val("Loading...");
-    loadScript(hosted_checkout_js, function() {
-        initializeCheckout();
-        showPaymentPage();
-    });
-}
-
-function showPaymentPage() {
-    if (!checkoutLoaded) {
-        console.error('Checkout library not loaded');
-        return;
+            showEmbeddedPage('#embed-target');
+            $("#embeded_payment_button").addClass('d-none');
+            $('.bubbles').addClass('d-none');
+        });
     }
-    Checkout.showPaymentPage();
-}
 
-function showEmbeddedPage(targetId) {
-    if (!checkoutLoaded) {
-        console.error('Checkout library not loaded');
-        return;
+    // Function to show the embedded page after Checkout library is loaded
+    function showEmbeddedPage(targetId) {
+        if (!checkoutLoaded) {
+            console.error('Checkout library not loaded');
+            return;
         }
-    Checkout.showEmbeddedPage(targetId);
-}
+        Checkout.showEmbeddedPage(targetId, () => {
+          $("#embeded_payment_button").addClass('d-none');
+        });
+    }
 
-function setCookie(name, value, minutesToExpire) {
-  const date = new Date();
-  date.setTime(date.getTime() + (minutesToExpire * 60 * 1000)); // Calculate the expiration date in milliseconds
-  const expires = "expires=" + date.toUTCString();
-  document.cookie = name + "=" + value + ";" + expires + ";path=/";
-}
-  
+    // Function to load Checkout library and show payment page
+    function loadCheckoutLibraryPaymentPage() {
+        $('#redirect_payment_button').val("Loading...");
+        loadScript(hosted_checkout_js, function() {
+            initializeCheckout();
+            showPaymentPage();
+        });
+    }
+
+    // Function to show payment page after Checkout library is loaded
+    function showPaymentPage() {
+        if (!checkoutLoaded) {
+            console.error('Checkout library not loaded');
+            return;
+        }
+        Checkout.showPaymentPage();
+    }
+
+
+    function setCookie(name, value, minutesToExpire) {
+        const date = new Date();
+        date.setTime(date.getTime() + (minutesToExpire * 60 * 1000)); // Set expiration time in milliseconds
+        const expires = "expires=" + date.toUTCString();
+        document.cookie = name + "=" + value + ";" + expires + ";path=/";
+    }
+
+    // Function to cleanup session data
+    function cleanupBrowserSession() {
+        var sessionKey, i;
+        var sessionKeysToClear = ['HostedCheckout_sessionId', 'HostedCheckout_embedContainer'];
+        for (i = 0; i < sessionKeysToClear.length; i++) {
+            sessionKey = sessionKeysToClear[i];
+            if (sessionStorage.key(sessionKey)) {
+                sessionStorage.removeItem(sessionKey);
+            }
+        }
+    }
+
+    // Optional callback for error handling
+    function errorCallback(error) {
+        let err = JSON.stringify(error);
+        console.error(err);
+        alert('Error: ' + JSON.stringify(error));
+    }
+
+    // Optional callback for before redirect
+    function beforeRedirect() {
+        sessionStorage.clear();
+        $("#embeded_payment_button").addClass('d-none');
+    }
+
+    function afterRedirect() {
+        sessionStorage.clear();
+        $("#embeded_payment_button").addClass('d-none');
+    }
 </script>
 
 
+<style>
+    .d-none{
+        display: none !important;
+    }
+</style>
