@@ -1,4 +1,4 @@
-# Mastercard Payment Gateway Services  for OpenCart
+# Mastercard Gateway module for OpenCart
 This plugin adds Mastercard Payment Gateway Services as a payment option on your OpenCart checkout page.
 
 ## System Requirments
@@ -18,7 +18,7 @@ For customer support: https://mpgsfgs.atlassian.net/servicedesk/customer/portals
 Version v1.3.2
 - Added PayPal (Supported in Hosted Checkout Only).
 - Updated Mastercard API Version to 100.
-- The plugin will capture download count from GitHub and track active installations, including Store Name, Store URL, and Country, once Test Mode is disabled and live credentials are saved.
+- The plugin will capture the download count from GitHub and track active installations, including Store Name, Store URL, and Country, once Test Mode is disabled and live credentials are saved.
 
 Version v1.3.1
 - Implemented a notification feature to alert the OpenCart administrator whenever a new version is launched on GitHub.
