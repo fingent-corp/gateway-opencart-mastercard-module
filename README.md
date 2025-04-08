@@ -1,5 +1,5 @@
 # Mastercard Gateway module for OpenCart
-This plugin adds Mastercard Payment Gateway Services as a payment option on your OpenCart checkout page.
+This plugin adds Mastercard Gateway as a payment option on your OpenCart checkout page.
 
 ## System Requirments
 The latest release of the plugin has the following system requirements:
