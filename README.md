@@ -1,4 +1,4 @@
-# Mastercard Gateway module for OpenCart
+# Mastercard Gateway Module for OpenCart
 
 <p align="center" style="margin-top: 25px;">
 <a href="https://www.fingent.com/" target="_blank"><img alt="Fingent logo" height="50px" src="https://www.fingent.com/wp-content/uploads/Fingent-Logo-01.png"/></a>&nbsp;&nbsp;<img alt="MC logo" height="50px" src="https://mpgs.fingent.wiki/wp-content/uploads/2025/04/mastercard-logo.png"/>
@@ -15,46 +15,47 @@ We carefully monitor every transaction to catch and stop fraud, making sure your
 With this gateway, you don’t have to handle or store customer card/account details yourself. This makes meeting PCI compliance easier for your business. You can focus on running your store while the gateway securely processes payments for you.
 
 ## Compatibility
+
 The latest version of the extension has been tested and is compatible only with OpenCart version 4.0.2.3.
 
-##  Mastercard Gateway Module Features
+##  Mastercard Payment Module Features
 
-The Mastercard Gateway Module is packed with tools to make payment processing easier and safer for your business. Here's a quick look at its main features:
+The Mastercard Gateway Payment Module is packed with tools to make payment processing easier and safer for your business. Here's a quick look at its main features:
 
-### **1. Payment Methods -** Defines the types of payment options supported, which are:
+**1. Payment Methods -** Defines the types of payment options supported, which are:
 
-### • Card Payments
+   - **Card Payments**<br/>
 Easily and securely accept both credit and debit card payments. This feature works with major card brands, making it simple and reliable for your customers to pay.
 
-### • Google Pay (Supported in Hosted Checkout Only)
+   - **Google Pay (Supported in Hosted Checkout Only)**<br/>
 With Google Pay, customers can quickly and easily pay on the hosted checkout page. To enable this option, ensure your Merchant Identification Number (MID) is configured for Google Pay. This makes payments smooth and hassle-free, allowing customers to complete transactions with just a few taps.
 
-### • PayPal (Supported in Hosted Checkout Only)
+   - **PayPal (Supported in Hosted Checkout Only)**<br/>
 With PayPal, customers can make payments quickly and effortlessly through the hosted checkout page. To use this option, ensure that your MID is set up for PayPal transactions. Once enabled, this feature provides a seamless and hassle-free payment experience, allowing customers to complete their purchases with just a few simple taps.
 
-### **2. Checkout and Payment Integration -** Defines the types of payment options supported, which are:
+**2. Checkout and Payment Integration -** This feature focuses on the method of collecting payment details from customers:
 
-### • Hosted Checkout
+   - **Hosted Checkout**<br/>
 This feature lets your customers enter their payment details on a ready-made secure checkout page provided directly by Mastercard. It keeps sensitive information safe while giving your customers a smooth and hassle-free payment experience.
 
-## **3. Fraud Prevention and Security -**  This feature enhances security and protects against fraud:
+**3. Fraud Prevention and Security -** This feature enhances security and protects against fraud:
 
-### • Address Verification Service (AVS)
+   - **Address Verification Service (AVS)**<br/>
 AVS helps prevent fraud by checking the billing address provided during a payment to make sure it matches the one on file with the cardholder's bank. This helps confirm that the person making the payment is the actual cardholder. To use AVS, it must be activated on your MID.
 
-## **4. Transaction Management -**  This feature enhances security and protects against fraud:
-These features support the processing and management of transactions:
+**4. Transaction Management -** These features support the processing and management of transactions:
 
-### • Capture Payments
+   - **Capture Payments**<br/>
 This feature lets you manually process payments for authorized orders directly from your system. It gives you more control over how payments are handled.
 
-### • Full Refunds
+- **Full Refunds**<br/>
 You can refund the entire amount of the transaction back to the customer's account. This is helpful when a complete order needs to be cancelled or returned. 
 
-### • Partial Refunds
+- **Partial Refunds**<br/>
 This feature lets you refund only part of an order, giving the customer the specific amount they are entitled to.
 
-## Disclaimer!
+### Disclaimer!
+
 Starting from version 1.3.2, the plugin will collect analytics data, including the plugin download count from GitHub and the active installation count. The Active count, Store Name, Store URL, and the Country configured in the OpenCart Admin page will be captured once the Test Mode is set as No and the Live Merchant ID and Live API Password are saved in the configuration page.
 
 ## Documentation
@@ -64,4 +65,4 @@ The official documentation for this module is available on the [Wiki site](https
 For more information, please refer to the [Wiki documentation](https://mpgs.fingent.wiki/enterprise/opencart-mastercard-gateway/installation).
 
 ## Support
-For additional support, please visit the [Support Portal](https://mpgsfgs.atlassian.net/servicedesk/customer/user/login?destination=portals).
+For additional support, please visit the [Support Portal](https://mpgsfgs.atlassian.net/servicedesk/customer/user/login?destination=portals).
