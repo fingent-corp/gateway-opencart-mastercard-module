@@ -1,0 +1,42 @@
+.partial_refund_form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.button_wrapper {
+    margin-bottom: 22px;
+}
+
+.refund_button_container,
+.partial_refund_container {
+    display: flex;
+}
+
+.refund_amount {
+    width: 130px;
+    margin-bottom: 20px;
+}
+
+.refundBoxContainer {
+    margin: 0 30px;
+}
+.img_loading_captureButton .capture_Spinner::before,
+.img_loading_refundButton .fa-spin::before{
+    color: #000000;
+}
+
+span.img_loading_refundButton i.fa.fa-cog.fa-spin.fa-lg {
+    padding: 0 10px;
+}
+
+span.img_loading_captureButton .capture_Spinner {
+    padding: 17px;
+}
+
+.action_wrapper {
+    margin-top: 15px;
+}
+
+.version-info .module-notification-wrapper{
+    margin-top: 10px;
+}

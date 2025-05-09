@@ -1,0 +1,313 @@
+<script src="view/javascript/mpgs-hosted-checkout/custom.js"></script>
+{% for txn in mgps_hosted_checkout_order.transactions %}
+<div id="mgps_transaction_msg_"></div>
+<table class="table table-bordered">
+	<thead>
+		<tr>
+			<td colspan="2">
+				<h2>{{ text_payment_txn_info }}</h2>
+			</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+
+			<td>{{ text_date_created }}</td>
+			<td>{{ txn.date_added }}</td>
+		</tr>
+		<tr>
+			<td>{{ text_order_ref }}</td>
+			<td>{{ txn.oc_order_id }}</td>
+		</tr>
+		<tr>
+			<td>{{ text_txn_ref }}</td>
+			<td>{{ txn.transaction_id }}</td>
+		</tr>
+
+		<tr>
+			<td>{{ text_txn_status }}</td>
+			<td>{{ txn.status|replace({'_': ' '})|title }}</td>
+		</tr>
+
+		<tr>
+			<td>{{ text_txn_amount }}</td>
+			<td> {{currency}}{{ txn.amount | number_format(2, '.', ',') }}</td>
+		</tr>
+		{% if txn.refunded_amount %}
+		<tr>
+			<td>{{ text_refunded_amount }}</td>
+			<td> {{currency}}{{ txn.refunded_amount | number_format(2, '.', ',') }}</td>
+		</tr>
+		{% endif %}
+	</tbody>
+
+</table>
+
+<fieldset>
+	<div class="parent_wrapper">
+		{% if txn.status == 'AUTHORIZED'%}
+		<div class="text-right refund_button_container">
+			<button id="captureButton" class="btn_capture btn btn-primary" type="button" data-id="{{ user_token }}"
+				data-order="{{ txn.oc_order_id }}"> <i class="fa fa-plus-circle"></i>&nbsp;Capture Payment
+			</button>
+			<span class="img_loading_captureButton" style="display:none;">
+				<i class="fa fa-cog fa-spin fa-lg capture_Spinner"></i>
+			</span>
+		</div>
+		{% elseif txn.status == 'CAPTURED' or txn.status == 'Captured' %}
+
+		<div class="refund_wrapper">
+			<div class="button_wrapper">
+				<button id="refundButton" class="btn_refund btn btn-primary" data-id="{{ user_token }}" type="button"
+					data-order="{{ txn.oc_order_id }}"><i class="fa fa-plus-circle"></i>&nbsp;Full Refund</button>
+				<button id="partialrefundButton" class="btn btn-primary btn_refund_partial" type="button"
+					data-amount="{{ txn.amount - txn.refunded_amount }}" data-order="{{ txn.oc_order_id }}"
+					data-max="{{txn.amount - txn.amount}}"><i class="fa fa-plus-circle"></i>&nbsp;Partial Refund</button>
+				<span class="img_loading_refundButton" style="display:none;">
+					<i class="fa fa-cog fa-spin fa-lg"></i>
+				</span>
+			</div>
+
+			<div class="refund_form_wrapper" style="display: none;">
+				<div id="refundBoxContainer" class="refund_container">
+					<form id="partail_refund_form" class="partial_refund_form">
+						<label>Amount</label>
+						<input type="text" id="refundInput" placeholder="Enter an Amount"
+							class="form-control refund_amount">
+						<label>Reason</label>
+						<textarea class="refundReason" rows="10" cols="50"></textarea>
+						<label>Remaining Characters: <span id="charCount">500</span> </label>
+				</div>
+
+				<div class="action_wrapper">
+					<button id="partialrefund" data-id="{{ user_token }}"
+						class="submitRefundbtn btn btn-primary">Refund</button>
+					<button data-bs-toggle="tooltip" class="btn btn-light cancel_refund_button" aria-label="Back"
+						data-bs-original-title="Back"><i class="fa-solid fa-reply fa fa-reply"></i></button>
+					<span class="img_loading" style="display:none;">
+						<i class="fa fa-cog fa-spin fa-lg"></i>
+					</span>
+
+					<span class="img_loading_captureButton" style="display:none;">
+						<i class="fa fa-cog fa-spin fa-lg capture_Spinner"></i>
+					</span>
+				</div>
+
+				</form>
+			</div>
+
+		</div>
+		{% elseif txn.status == 'PARTIALLY_REFUNDED' %}
+		<div class="refund_wrapper">
+			<div class="button_wrapper">
+				<button id="partialrefundButton" class="btn btn-primary btn_refund_partial" type="button"
+					data-amount="{{ txn.amount - txn.refunded_amount }}" data-order="{{ txn.oc_order_id }}"><i
+						class="fa fa-plus-circle"></i> Partial Refund</button>
+				<span class="img_loading_refundButton" style="display:none;">
+					<i class="fa fa-cog fa-spin fa-lg refund_spinner"></i>
+				</span>
+			</div>
+
+			<div class="refund_form_wrapper" style="display: none;">
+				<div id="refundBoxContainer" class="refund_container">
+					<form id="partail_refund_form" class="partial_refund_form">
+						<label>Amount</label>
+						<input type="text" id="refundInput" placeholder="Enter an Amount"
+							class="form-control refund_amount">
+						<label>Reason</label>
+						<textarea class="refundReason" rows="10" cols="50"></textarea>
+						<label>Remaining Characters: <span id="charCount">500</span> </label>
+				</div>
+
+				<div class="action_wrapper">
+					<button id="partialrefund" data-id="{{ user_token }}"
+						class="submitRefundbtn btn btn-primary">Refund</button>
+					<button data-bs-toggle="tooltip" class="btn btn-light cancel_refund_button" aria-label="Back"
+						data-bs-original-title="Back"><i class="fa-solid fa-reply fa fa-reply"></i></button>
+					<span class="img_loading" style="display:none;">
+						<i class="fa fa-cog fa-spin fa-lg"></i>
+					</span>
+
+					<span class="img_loading_captureButton" style="display:none;">
+						<i class="fa fa-cog fa-spin fa-lg capture_Spinner"></i>
+					</span>
+				</div>
+
+				</form>
+			</div>
+
+		</div>
+		{% endif %}
+
+</fieldset>
+{% endfor %}
+
+<script>
+	$(document).ready(function () {
+
+
+		$("button.btn_capture").on('click', function (e) {
+			if (!confirm("Are you sure, you want to capture this transaction")) {
+				return;
+			}
+
+			var captureButton = $(this);
+			var refundButton = $('#refundButton');
+			var voidButton = $('#voidButton');
+			var loader = captureButton.siblings('.img_loading_captureButton');
+			var txn_id = $(this).val();
+			var merchant_id = $(this).attr('data-merchant');
+			var capture_order_id = $(this).attr('data-order');
+			var capture_amount = $(this).attr('data-amount');
+			var user_token = $(this).attr('data-id');
+			var message_container = $('#mgps_transaction_msg_');
+			var captureurlWithUserToken = 'index.php?route=extension/payment/mpgs_hosted_checkout/capture&user_token={{ user_token }}'
+
+			$.ajax({
+				type: 'POST',
+				dataType: 'json',
+				data: { 'order_id': capture_order_id },
+				url: captureurlWithUserToken
+				,
+				beforeSend: function () {
+					loader.show();
+					captureButton.prop('disabled', true);
+				},
+				success: function (data) {
+					if (!data.error) {
+						captureButton.hide();
+						loader.hide();
+						voidButton.hide();
+						refundButton.show();
+						$('#action_tab').hide();
+						message_container.text(data.msg).addClass('alert alert-success');
+						setTimeout(function () {
+							message_container.hide();
+							location.reload(true);
+						}, 2000);
+
+					} else {
+						message_container.addClass('alert alert-danger');
+						captureButton.prop('disabled', false);
+					}
+				},
+				error: function (xhr, status, error) {
+					console.error("AJAX call failed:", error);
+				}
+			});
+		});
+
+		$("button.btn_refund").on('click', function (e) {
+			if (!confirm("Are you sure you want to request for full refund")) {
+				return;
+			}
+			var refundButton = $(this);
+			var txn_id = $(this).val();
+			var loader = refundButton.siblings('.img_loading_refundButton');
+			var merchant_id = $(this).attr('data-merchant');
+			var capture_order_id = $(this).attr('data-order');
+			var capture_amount = $(this).attr('data-amount');
+			var user_token = $(this).attr('data-id');
+			var message_container = $('#mgps_transaction_msg_');
+			var refundurlWithUserToken = 'index.php?route=extension/payment/mpgs_hosted_checkout/RequestRefund&user_token={{ user_token }}';
+
+			$.ajax({
+				type: 'POST',
+				dataType: 'json',
+				data: { 'order_id': capture_order_id },
+				url: refundurlWithUserToken,
+				beforeSend: function () {
+					loader.show();
+					refundButton.prop('disabled', true);
+					$('#partialrefundButton').hide();
+				},
+				success: function (data) {
+					loader.hide();
+					
+					message_container.text(data.msg).addClass('alert alert-success');
+					if (!data.error) {
+						loader.hide();
+						refundButton.hide();
+						$('#action_tab').hide();
+						setTimeout(function () {
+							location.reload(true);
+						}, 2000);
+					} else {
+						message_container.addClass('alert alert-danger');
+						captureButton.prop('disabled', false);
+					}
+				},
+				error: function (xhr, status, error) {
+					console.error("AJAX call failed:", error);
+				}
+			});
+		});
+
+		$("button.submitRefundbtn").on("click", function () {
+			if (!confirm("Are you sure you want to request for partial refund")) {
+				return;
+			}
+			var user_token = $(this).attr('data-id');
+			var partilrefundButton = $(this);
+			var loader = $(".submitRefundbtn").siblings('.img_loading_captureButton');
+			var merchant_id = $('#partialrefundButton').attr('data-merchant');
+			var capture_order_id = $('#partialrefundButton').attr('data-order');
+			var message_container = $('#mgps_transaction_msg_');
+			var requestedRefund = $('#refundInput').val();
+			var reason = $('.refundReason').val();
+
+			var maxRefund = $("#partialrefundButton").data("amount");
+			var urlWithUserToken = 'index.php?route=extension/payment/mpgs_hosted_checkout/RequestPartialRefund&user_token={{ user_token }}';
+			var fullrefundButton = $('refundButton');
+			$('#refundButton').hide();
+			$('#partailRefund').val('Loading...');
+		
+
+			if (requestedRefund > maxRefund) {
+				
+				
+				message_container.text("Please enter a valid refund amount").addClass('alert alert-danger');
+				$('#refundBoxContainer').hide();
+				setTimeout(function () {
+					location.reload(true);
+				}, 2000);
+			} else {
+			
+				$.ajax({
+					type: 'POST',
+					dataType: 'json',
+					data: { 'order_id': capture_order_id, 'amount': requestedRefund, 'reason': reason },
+					url: urlWithUserToken,
+					beforeSend: function () {
+						loader.show();
+						partilrefundButton.prop('disabled', true);
+						fullrefundButton.prop('disabled', true);
+					},
+					success: function (data) {
+						loader.hide();
+
+						if (!data.error) {
+							message_container.text(data.msg).addClass('alert alert-success');
+							loader.hide();
+							$('#refundBoxContainer').hide();
+							partilrefundButton.hide();
+							$('#action_tab').hide();
+							setTimeout(function () {
+								location.reload(true);
+							}, 2000);
+						} else {
+							message_container.addClass('alert alert-danger');
+							captureButton.prop('disabled', false);
+						}
+					},
+					error: function (xhr, status, error) {
+						console.error("AJAX call failed:", error);
+					}
+				});
+			}
+		});
+
+
+
+	});
+</script>

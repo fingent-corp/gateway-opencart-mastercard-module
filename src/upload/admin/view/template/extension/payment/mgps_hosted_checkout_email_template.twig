@@ -1,0 +1,49 @@
+<html>
+    <head>
+        <style>
+            /* Add any CSS styles you want to apply to the email here */
+            table {
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        <p>Dear&nbsp;{{ customer_name }},</p>
+        
+        {% for txn in mgps_hosted_checkout_order.transactions %}
+       <p>Your payment against this order has been successfully&nbsp;{{ txn.status|replace({'_': ' '})|title }}.&nbsp;Please find the order details below.</p>
+        <table style="border-collapse: collapse; width: 100%; border-top: 1px solid #DDDDDD; border-left: 1px solid #DDDDDD; margin-bottom: 20px;">
+            <thead>
+              <tr>
+                <td style="font-size: 12px; border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; background-color: #EFEFEF; font-weight: bold; text-align: left; padding: 7px; color: #222222;" colspan="2">Order details</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-size: 12px;	border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: left; padding: 7px;">
+                <b>Date Added:</b> {{ txn.date_added }}  <br/>
+                <b>Order ID:</b> {{ txn.order_id }}<br/>
+                <b>Transaction ID:</b> {{ txn.transaction_id }}<br/>
+                <b>Transaction Status:</b>{{ txn.status|replace({'_': ' '})|title }}<br/> </td>
+                <td style="font-size: 12px;	border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: left; padding: 7px;">
+                  <b>Email :</b> {{ receiver_address }}<br/>
+                  <b>Captured Amount:</b>{{ currency }}{{ txn.amount | number_format(2, '.', ',') }}<br/>
+                {% if txn.refunded_amount %}
+                  <b>Refunded Amount:</b>{{currency}}{{ txn.refunded_amount | number_format(2, '.', ',') }}
+                {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        {% endfor %}
+        <p style="margin-top: 0px; margin-bottom: 20px;">Please don't reply to this email.</p>
+    </body>
+    </html>
+
+    
+
+    
