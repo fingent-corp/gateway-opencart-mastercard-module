@@ -20,6 +20,11 @@ All notable changes to this project will be documented in this file.
 - Updated Mastercard API Version to 73.
 - Added Refund, Partial Refund Options.
 
+## [1.2.0] - 2025-09-05
+### Updated
+- Compatible only with OpenCart version 3.
+- Support added for Mastercard API Version 100.
+
 
 
 
