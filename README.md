@@ -16,7 +16,7 @@ With this gateway, you don’t have to handle or store customer card/account det
 
 ## Compatibility
 
-Plugin version 1.2.0 has been tested for compatibility only with OpenCart versions 3.0.2.0, 3.0.3.0, 3.0.3.8, 3.0.3.9, and 3.0.4.0.
+Plugin version 1.2.0 has been tested for compatibility only with OpenCart version 3.
 
 ##  Mastercard Payment Module Features
 
