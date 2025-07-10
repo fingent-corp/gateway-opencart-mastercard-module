@@ -3,10 +3,6 @@
     margin-bottom: 10px;
 }
 
-.button_wrapper {
-    margin-bottom: 22px;
-}
-
 .refund_button_container,
 .partial_refund_container {
     display: flex;
@@ -38,4 +34,53 @@ span.img_loading_captureButton .capture_Spinner {
 
 .version-info .module-notification-wrapper{
     margin-top: 10px;
+}
+.integration-model-container{
+    display: none;
+}
+.authorize-actions-container{
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+.authorize-actions-container .refund_button_container{
+    margin: 0;
+}
+.mastercard-admin-notes{
+    margin-top: 10px;
+}
+
+#form-mastercard .status-label{
+    font-size: 14px;
+}
+
+label.section-description{
+    margin-bottom: 16px;
+}
+
+.settings-division{
+    margin-bottom: 20px;
+}
+
+section.sec-divider {
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+#form-mastercard label.section-description{
+    margin-bottom: 15px;
+}
+#voidButton.btn_void,
+#refundButton.btn_refund{
+    margin-right: 12px;
+}
+.form-control,
+.form-select{
+    border: 1px solid black;
+}
+.merchant-info-parent-wrapper{
+    border: 1px solid #4c4d5a;
+    color: #4c4d5a;
+    outline: 0;
+    padding: 10px;
 }

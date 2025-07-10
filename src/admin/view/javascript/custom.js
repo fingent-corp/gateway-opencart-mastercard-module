@@ -60,15 +60,7 @@ $(function ($) {
                     testPassword.removeClass('required');
                 }
             }).change();
-
-            $('#select-api-gateway').on('change', function () {
-                if ($(this).val() === 'api_other') {
-                    gateway_url.show();
-                } else {
-                    gateway_url.hide();
-                }
-            }).change();
-
+            
             $('#integration-model').on('change', function () {
                 if ($(this).val() === 'hostedcheckout') {
                     saved_cards.hide();
@@ -142,7 +134,6 @@ $(function ($) {
                 $(this).val(parts.join('.'));
             }
         });
-        
     });
 
 });

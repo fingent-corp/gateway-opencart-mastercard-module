@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2023 Mastercard
+ * Copyright (c) 2019-2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * @package  Mastercard
+ * @version  GIT: @1.3.3@
+ * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 
 namespace Opencart\Catalog\Model\Extension\Mastercard\Payment;
@@ -24,10 +28,10 @@ class Mastercard extends \Opencart\System\Engine\Model {
     const API_ASIA = 'api_ap';
     const API_MTF = 'api_mtf';
     const API_OTHER = 'api_other';
-    const MODULE_VERSION = '1.3.2';
+    const MODULE_VERSION = '1.3.3';
     const API_VERSION = '100';
     const DEBUG_LOG_FILENAME = 'mpgs_gateway.log';
-    const THREEDS_API_VERSION = '1.3.2';
+    const THREEDS_API_VERSION = '1.3.3';
         
     /**
      * getMethods
@@ -36,10 +40,8 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @return array
      */
     public function getMethods(array $address = []): array {
-
-        // loading mastercard payment language
         $this->load->language('extension/mastercard/payment/mastercard');
-
+    
         if ($this->cart->hasSubscription()) {
             $status = false;
         } elseif (!$this->cart->hasShipping()) {
@@ -49,83 +51,72 @@ class Mastercard extends \Opencart\System\Engine\Model {
         } elseif (!$this->config->get('mastercard_payment_geo_zone_id')) {
             $status = true;
         } else {
-            // getting payment data using zeo zone
-            $query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "zone_to_geo_zone` WHERE `geo_zone_id` = '" . (int)$this->config->get('mastercard_payment_geo_zone_id') . "' AND `country_id` = '" . (int)$address['country_id'] . "' AND (`zone_id` = '" . (int)$address['zone_id'] . "' OR `zone_id` = '0')");
-
-            // if the rows found the status set to True
-            if ($query->num_rows) {
-                $status = true;
-            } else {
-                $status = false;
-            }
+            $geoZoneId = (int)$this->config->get('mastercard_payment_geo_zone_id');
+            $countryId = (int)$address['country_id'];
+            $zoneId = (int)$address['zone_id'];
+    
+            $query = $this->db->query(
+                "SELECT * FROM `" . DB_PREFIX . "zone_to_geo_zone`
+                 WHERE `geo_zone_id` = '{$geoZoneId}'
+                 AND `country_id` = '{$countryId}'
+                 AND (`zone_id` = '{$zoneId}' OR `zone_id` = '0')"
+            );
+    
+            $status = $query->num_rows > 0;
         }
-
-        $method_data = [];
-        
+    
+        $methodData = [];
+    
         if ($status) {
-            $option_data['mastercard'] = [
+            $title = $this->config->get('payment_mastercard_title') ?: 'Pay with Pay With Mastercard Gateway';
+    
+            $optionData['mastercard'] = [
                 'code' => 'mastercard.mastercard',
-                'name' => $this->config->get('payment_mastercard_title') ?: 'Pay With Mastercard Payment Gateway Services',
+                'name' => $title,
             ];
-
-            $method_data = [
+    
+            $methodData = [
                 'code'       => 'mastercard',
-                'name'       => $this->config->get('payment_mastercard_title') ?: 'Pay with Pay With Mastercard Payment Gateway Services',
-                'option'     => $option_data,
+                'name'       => $title,
+                'option'     => $optionData,
                 'sort_order' => $this->config->get('payment_mastercard_sort_order')
             ];
         }
-
-        return $method_data;
+    
+        return $methodData;
     }
+    
 
     /**
      * @return mixed
     */
 
-    public function getIntegrationModel(){
-        return $this->config->get('payment_mastercard_integration_model');
+    public function getIntegrationModel() {
+        return 'hostedcheckout';
     }
 
     /**
      * @return string
      */
-    public function getGatewayUri(){
-
-        $gatewayUrl = ''; // Initialize $gatewayUrl before the conditional statements
-        $apiGateway = $this->config->get('payment_mastercard_api_gateway');
-        if ($apiGateway === self::API_AMERICA) {
-            $gatewayUrl = 'https://na-gateway.mastercard.com/';
-        } elseif ($apiGateway === self::API_EUROPE) {
-            $gatewayUrl = 'https://eu-gateway.mastercard.com/';
-        } elseif ($apiGateway === self::API_ASIA) {
-            $gatewayUrl = 'https://ap-gateway.mastercard.com/';
-        } elseif ($apiGateway === self::API_MTF) {
-            $gatewayUrl = 'https://mtf.gateway.mastercard.com/';
-        } elseif ($apiGateway === self::API_OTHER) {
-            $url = $this->config->get('payment_mastercard_api_gateway_other');
-            if (!empty($url) && substr($url, -1) !== '/') {
-                $url = $url . '/';
-            }
-            $gatewayUrl = $url;
-        }
+    public function getGatewayUri() {
+        $gatewayUrl = $this->config->get('payment_mastercard_api_gateway_other');
         return $gatewayUrl;
     }
     
-
     /**
      * @return string
      */
-    public function getApiUri(){
-        return $this->getGatewayUri() . 'api/rest/version/' . $this->getApiVersion() . '/merchant/' . $this->getMerchantId();
+    public function getApiUri() {
+        return $this->getGatewayUri()
+             . 'api/rest/version/' . $this->getApiVersion()
+             . '/merchant/' . $this->getMerchantId();
     }
 
     /**
      * @return mixed
      */
-    public function getMerchantId(){
+    public function getMerchantId() {
         if ($this->isTestModeEnabled()) {
-            
             return $this->config->get('payment_mastercard_test_merchant_id');
         } else {
             return $this->config->get('payment_mastercard_live_merchant_id');
@@ -136,7 +127,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @return mixed
     **/
 
-    public function getApiPassword(){
+    public function getApiPassword() {
         if ($this->isTestModeEnabled()) {
             return $this->config->get('payment_mastercard_test_api_password');
         } else {
@@ -147,8 +138,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
     * @return mixed
     */
-
-    public function getWebhookSecret(){
+    public function getWebhookSecret() {
         if ($this->isTestModeEnabled()) {
             return $this->config->get('payment_mpgs_hosted_checkout_test_notification_secret');
         } else {
@@ -159,21 +149,21 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function getApiVersion(){
+    public function getApiVersion() {
         return self::API_VERSION;
     }
 
     /**
      * @return mixed
      */
-    public function isTestModeEnabled(){
+    public function isTestModeEnabled() {
         return $this->config->get('payment_mastercard_test');
     }
 
     /**
      * @return bool
      */
-    public function isDebugModeEnabled(){
+    public function isDebugModeEnabled() {
         if ($this->isTestModeEnabled()) {
             return $this->config->get('payment_mpgs_hosted_checkout_debug') === '1';
         }
@@ -183,14 +173,14 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function threeDSApiVersion(){
+    public function threeDSApiVersion() {
         return self::THREEDS_API_VERSION;
     }
 
     /**
      * @return string
      */
-    public function getPaymentAction(){
+    public function getPaymentAction() {
         $paymentAction = $this->config->get('payment_mastercard_initial_transaction');
         if ($paymentAction === 'pay') {
             return 'PURCHASE';
@@ -202,7 +192,7 @@ class Mastercard extends \Opencart\System\Engine\Model {
     /**
      * @return string
      */
-    public function buildPartnerSolutionId(){
+    public function buildPartnerSolutionId() {
         return 'OC_' . VERSION . '_MASTERCARD_' . self::MODULE_VERSION;
     }
 
@@ -212,19 +202,14 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @param array $data
      * @return mixed
      */
-    public function apiRequest($method, $uri, $data = []){
+    public function apiRequest($method, $uri, $data = []) {
         $userId = 'merchant.' . $this->getMerchantId();
-        $requestLog = 'Send Request: "' . $method . ' ' . $uri . '" ';
-        if (!empty($data)) {
-            $requestLog .= json_encode(['request' => $data]);
-          
-        }
-        $this->log($requestLog);
+    
         $curl = curl_init();
-        switch ($method){
+        switch ($method) {
             case 'POST':
                 curl_setopt($curl, CURLOPT_POST, 1);
-                if (!empty($data)) {
+                if (!empty($data)){
                     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
                 }
                 break;
@@ -237,23 +222,21 @@ class Mastercard extends \Opencart\System\Engine\Model {
             default:
                 break;
         }
-
+    
         curl_setopt($curl, CURLOPT_URL, $uri);
         curl_setopt($curl, CURLOPT_USERPWD, $userId . ':' . $this->getApiPassword());
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         $output = curl_exec($curl);
-        $httpResponseCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-        $responseText = 'Receive Response: "' . $httpResponseCode . '" for the request: "' . $method . ' ' . $uri . '" ';
-        $responseText .= json_encode(['response' => json_decode($output)]);
-        $this->log($responseText);
+    
         return json_decode($output, true);
     }
-
+    
     /**
      * Clear data from session
      */
-    public function clearCheckoutSession(){
+    public function clearCheckoutSession() {
         unset($this->session->data['mpgs_hosted_checkout']);
         unset($this->session->data['mpgs_hosted_session']);
         unset($this->session->data['mpgs_hosted_checkout']['successIndicator']);
@@ -264,15 +247,18 @@ class Mastercard extends \Opencart\System\Engine\Model {
      * @param $customerId
      * @return mixed
      */
-    public function getCustomerTokens($customerId){
-        $tokensResult = $this->db->query("SELECT * FROM `" . DB_PREFIX . "mpgs_hpf_token` WHERE customer_id='" . (int)$customerId . "'");
+    public function getCustomerTokens($customerId) {
+        $sql = "SELECT * FROM `" . DB_PREFIX . "mpgs_hpf_token`
+                WHERE customer_id = '" . (int)$customerId . "'";
+        $tokensResult = $this->db->query($sql);
         return $tokensResult->rows;
     }
+
 
     /**
      * @param $message
      */
-    public function log($message){
+    public function log($message) {
         if ($this->isDebugModeEnabled()) {
             $this->debugLog = new Log(self::DEBUG_LOG_FILENAME);
             $this->debugLog->write($message);
@@ -280,7 +266,9 @@ class Mastercard extends \Opencart\System\Engine\Model {
     }
 
     public function getExtensions($type) {
-		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "extension WHERE `type` = '" . $this->db->escape($type) . "'");
-		return $query->rows;
-	}
+        $escapedType = $this->db->escape($type);
+        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "extension WHERE `type` = '" . $escapedType . "'");
+        return $query->rows;
+    }
+
 }

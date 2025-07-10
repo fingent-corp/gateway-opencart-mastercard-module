@@ -3,33 +3,37 @@
   <div class="page-header">
     <div class="container-fluid">
       {% if error_warning %}
-         <div class="alert alert-danger alert-dismissible"><i class="fa-solid fa-circle-exclamation"></i> {{ error_warning }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      <div class="alert alert-danger alert-dismissible"><i class="fa-solid fa-circle-exclamation"></i> {{ error_warning
+        }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
       {% endif %}
       {% if error_credentials_validation %}
-            <div class="alert alert-danger alert-dismissible"><i class="fa-solid fa-circle-exclamation"></i> {{ error_credentials_validation }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      <div class="alert alert-danger alert-dismissible"><i class="fa-solid fa-circle-exclamation"></i> {{
+        error_credentials_validation }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
       {% endif %}
       <div class="float-end">
-        <button type="submit" form="form-mastercard" data-bs-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i></button>
-        <a href="{{ back }}" data-bs-toggle="tooltip" title="{{ button_back }}" class="btn btn-light"><i class="fa-solid fa-reply"></i></a>
+        <button type="submit" form="form-mastercard" data-bs-toggle="tooltip" title="{{ button_save }}"
+          class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i></button>
+        <a href="{{ back }}" data-bs-toggle="tooltip" title="{{ button_back }}" class="btn btn-light"><i
+            class="fa-solid fa-reply"></i></a>
       </div>
       <h1>{{ heading_title }}</h1>
       <ol class="breadcrumb">
         {% for breadcrumb in breadcrumbs %}
-          <li class="breadcrumb-item"><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
         {% endfor %}
       </ol>
       <div class="version-info">
         <div class="module-version"><strong>{{ entry_module_version }}</strong> <span>{{ module_version }}</span></div>
         <div class="api-version"><strong>{{ entry_api_version }}</strong> <span>{{ api_version }}</span></div>
-        
+
         {% if latest_version > module_version %}
-          <div class="alert alert-warning alert-dismissible module-notification-wrapper">
-            <i class="fa-solid fa-circle-exclamation"></i> Warning: {{ update_message }} 
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
+        <div class="alert alert-warning alert-dismissible module-notification-wrapper">
+          <i class="fa-solid fa-circle-exclamation"></i> Warning: {{ update_message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
         {% endif %}
-    </div>
-    
+      </div>
+
     </div>
   </div>
 
@@ -38,336 +42,551 @@
       <div class="card-header"><i class="fa-solid fa-pencil"></i> {{ text_edit }}</div>
       <div class="card-body">
         <form id="form-mastercard" action="{{ action }}" method="post" enctype="multipart/form-data">
-          <ul class="nav nav-tabs">
-            <li class="nav-item"><a href="#tab-general" data-bs-toggle="tab" class="nav-link active">{{ tab_general }}</a></li>
-            <li id="testt" class="nav-item"><a  href="#tab-gateway" data-bs-toggle="tab" class="nav-link">{{ tab_gateway }}</a></li>
-            <li class="nav-item"><a href="#tab-additional" data-bs-toggle="tab" class="nav-link">{{ tab_additional }}</a></li>
-          </ul>
           <div class="tab-content">
-            <div id="tab-general" class="tab-pane active">
 
-              <div class="row mb-3">
-                <label for="module-status" class="col-sm-2 col-form-label">{{ entry_status }}</label>
-                <div class="col-sm-10">
-                  <div class="form-check form-switch form-switch-lg">
-                    <input type="checkbox" name="payment_mastercard_status" value="1" id="input-status" class="form-check-input" {{ payment_mastercard_status ? 'checked' : '' }}>
+          <section class="integeration-settings">
+            <h2>{{ intgrn_sec_head }}</h2>
+            <label class="section-description" for="integeration-settings" class="col-12">{{ intgrn_sec_desc }}</label>
+            <div class="row settings-division">
+              <label for="module-status" class="col-sm-2 col-form-label">{{ entry_status }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="payment_mastercard_status" value="1" id="payment_mastercard_status"
+                    class="form-check-input" {{ payment_mastercard_status ? 'checked' : '' }}>
+                    <label class="status-label"> Enabled </label>
+                    
                 </div>
-                </div>
-              </div>
-
-
-              <div class="row mb-3">
-                <label for="initial-transaction" class="col-sm-2 col-form-label">{{ entry_initial_transaction }}</label>
-                <div class="col-sm-10">
-                  <select name="payment_mastercard_initial_transaction" id="initial-transaction" class="form-select">
-                      {% if payment_mastercard_initial_transaction == 'pay' %}
-                          <option value="pay" selected="selected">{{ text_pay }}</option>
-                      {% else %}
-                          <option value="pay">{{ text_pay }}</option>
-                      {% endif %}
-                      {% if payment_mastercard_initial_transaction == 'authorize' %}
-                          <option value="authorize" selected="selected">{{ text_authorize }}</option>
-                      {% else %}
-                          <option value="authorize">{{ text_authorize }}</option>
-                      {% endif %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3 required">
-                <label for="entry-title" class="col-sm-2 col-form-label">{{ entry_title }}</label>
-                <div class="col-sm-10">
-                  {% if payment_mastercard_title is empty %}
-                  <input type="text" name="payment_mastercard_title" value="{{ payment_mastercard_title }}" id="entry-title" class="form-control is-invalid"/>
-                    <div class="invalid-feedback">
-                      {{ entry_title }} is required.
-                    </div>
-                    {% else %}
-                    <input type="text" name="payment_mastercard_title" value="{{ payment_mastercard_title }}" id="entry-title" class="form-control"/>
-                  {% endif %}                  
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="integration-model" class="col-sm-2 col-form-label">{{ entry_integration_model }}</label>
-                <div class="col-sm-10">
-                    <select name="payment_mastercard_integration_model" id="integration-model" class="form-select">
-                      {% if payment_mastercard_integration_model == 'hostedcheckout' %}
-                        <option value="hostedcheckout" selected="selected">{{ text_hostedcheckout }}</option>
-                        {# <option value="hostedsession">{{ text_hostedsession }}</option> #}
-                      {# {% else %}
-                        <option value="hostedcheckout">{{ text_hostedcheckout }}</option>
-                        <option value="hostedsession" selected="selected">{{ text_hostedsession }}</option> #}
-                    {% endif %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3" id="hc-type-container">
-                <label for="hc-type" class="col-sm-2 col-form-label">{{ entry_hc_type }}</label>
-                <div class="col-sm-10">
-                    <select name="payment_mastercard_hc_type" id="hc-type" class="form-select">
-                      {% if payment_mastercard_hc_type == 'redirect' %}
-                        <option value="redirect" selected="selected">{{ text_redirect }}</option>
-                        <option value="modal">{{ text_modal }}</option>
-                      {% else %}
-                          <option value="redirect">{{ text_redirect }}</option>
-                          <option value="modal" selected="selected">{{ text_modal }}</option>
-                      {% endif %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="send-line-items" class="col-sm-2 col-form-label">{{ entry_send_line_items }}</label>
-                <div class="col-sm-10">
-                    <select name="payment_mastercard_send_line_items" id="send-line-items" class="form-select">
-                      {% if payment_mastercard_send_line_items %}
-                        <option value="1" selected="selected">{{ text_yes }}</option>
-                        <option value="0">{{ text_no }}</option>
-                    {% else %}
-                        <option value="1">{{ text_yes }}</option>
-                        <option value="0" selected="selected">{{ text_no }}</option>
-                    {% endif %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="sort-order" class="col-sm-2 col-form-label">{{ entry_sort_order }}</label>
-                <div class="col-sm-10">
-                  <input type="text" name="payment_mastercard_sort_order" value="{{ payment_mastercard_sort_order }}" id="sort-order" class="form-control"/>
-                  <div id="error-meta-title" class="invalid-feedback"></div>
-                </div>
+                <label class="mastercard-admin-notes"> {{ info_hc }}</label>
               </div>
             </div>
 
-            <div id="tab-gateway" class="tab-pane">
-
-              <div class="row mb-3">
-                <label for="test-mode" class="col-sm-2 col-form-label">{{ entry_test }}</label>
-                <div class="col-sm-10">
-                    <select name="payment_mastercard_test" id="test-mode" class="form-select">
-                        {% if payment_mastercard_test %}
-                          <option value="1" selected="selected">{{ text_yes }}</option>
-                          <option value="0">{{ text_no }}</option>
-                        {% else %}
-                            <option value="1">{{ text_yes }}</option>
-                            <option value="0" selected="selected">{{ text_no }}</option>
-                        {% endif %}
-                  </select>
+            <div class="row settings-division required">
+              <label for="entry-title" class="col-sm-2 col-form-label">{{ entry_title }}</label>
+              <div class="col-sm-10">
+                {% if payment_mastercard_title is empty %}
+                <input type="text" name="payment_mastercard_title" value="{{ payment_mastercard_title }}"
+                  id="entry-title" class="form-control is-invalid" />
+                <div class="invalid-feedback">
+                  Please enter the Title for this payment method.
                 </div>
+                {% else %}
+                <input type="text" name="payment_mastercard_title" value="{{ payment_mastercard_title }}"
+                  id="entry-title" class="form-control" />
+                {% endif %}
+                <label class="mastercard-admin-notes"> {{ info_title }}</label>
               </div>
+            </div>
 
-              <div class="row mb-3 required" id="live-merchant-container">
-                <label for="live-merchant-id" class="col-sm-2 col-form-label">{{ entry_live_merchant_id }}</label>
-                <div class="col-sm-10">
-                  {% if error_live_merchant_id %}
-                  <input type="text" name="payment_mastercard_live_merchant_id" value="{{ payment_mastercard_live_merchant_id }}"  id="live-merchant-id" class="form-control is-invalid"/>
-                    <div class="text-danger">{{ error_live_merchant_id }}</div>
-                    {% else %}
-                    <input type="text" name="payment_mastercard_live_merchant_id" value="{{ payment_mastercard_live_merchant_id }}"  id="live-merchant-id" class="form-control"/>
-                  {% endif %}
-                </div>
-              </div>
 
-              <div class="row mb-3 required" id="live-password-container">
-                <label for="live-api-password" class="col-sm-2 col-form-label">{{ entry_live_api_password }}</label>
-                <div class="col-sm-10">
-                    {% if error_live_api_password %}
-                      <input type="password" name="payment_mastercard_live_api_password" value="{{ payment_mastercard_live_api_password }}"  id="live-api-password" class="form-control is-invalid"/>
-                      <div class="text-danger">{{ error_live_api_password }}</div>
-                      {% else %}
-                      <input type="password" name="payment_mastercard_live_api_password" value="{{ payment_mastercard_live_api_password }}"  id="live-api-password" class="form-control"/>
-                    {% endif %}
-                </div>
-              </div>
-
-              <div class="row mb-3 required"  id="test-merchant-container">
-                <label for="test-merchant-id" class="col-sm-2 col-form-label">{{ entry_test_merchant_id }}</label>
-                <div class="col-sm-10">
-                  {% if error_test_merchant_id %}
-                  <input type="text" name="payment_mastercard_test_merchant_id" value="{{ payment_mastercard_test_merchant_id }}"  id="test-merchant-id" class="form-control is-invalid"/>
-                      <div class="text-danger">{{ error_test_merchant_id }}</div>
+            <div class="row settings-division">
+              <label for="initial-transaction" class="col-sm-2 col-form-label">{{ entry_initial_transaction }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_initial_transaction" id="initial-transaction" class="form-select">
+                  {% if payment_mastercard_initial_transaction == 'pay' %}
+                  <option value="pay" selected="selected">{{ text_pay }}</option>
                   {% else %}
-                  <input type="text" name="payment_mastercard_test_merchant_id" value="{{ payment_mastercard_test_merchant_id }}"  id="test-merchant-id" class="form-control"/>
+                  <option value="pay">{{ text_pay }}</option>
                   {% endif %}
-                </div>
-              </div>
-
-              <div class="row mb-3 required" id="test-password-container">
-                <label for="test-api-password" class="col-sm-2 col-form-label">{{ entry_test_api_password }}</label>
-                <div class="col-sm-10">
-                  {% if error_test_api_password %}
-                  <input type="password" name="payment_mastercard_test_api_password" value="{{ payment_mastercard_test_api_password }}"  id="test-api-password" class="form-control is-invalid"/>
-                    <div class="text-danger">{{ error_test_api_password }}</div>
+                  {% if payment_mastercard_initial_transaction == 'authorize' %}
+                  <option value="authorize" selected="selected">{{ text_authorize }}</option>
                   {% else %}
-                    <input type="password" name="payment_mastercard_test_api_password" value="{{ payment_mastercard_test_api_password }}"  id="test-api-password" class="form-control"/>
+                  <option value="authorize">{{ text_authorize }}</option>
                   {% endif %}
-                </div>
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_initial_transaction }}</label>
               </div>
-
-              <div class="row mb-3" id="live-webhook-container">
-                <label for="live-notification-secret" class="col-sm-2 col-form-label">{{ entry_live_notification_secret }}</label>
-                <div class="col-sm-10">
-                  <input type="password" name="payment_mastercard_live_notification_secret" value="{{ payment_mastercard_live_notification_secret }}"  id="live-notification-secret" class="form-control"/>
-                </div>
-              </div>
-              <div class="row mb-3" id="test-webhook-container">
-                <label for="test-notification-secret" class="col-sm-2 col-form-label">{{ entry_test_notification_secret }}</label>
-                <div class="col-sm-10">
-                  <input type="password" name="payment_mastercard_test_notification_secret" value="{{ payment_mastercard_test_notification_secret }}"  id="test-notification-secret" class="form-control"/>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="select-api-gateway" class="col-sm-2 col-form-label">{{ entry_api_gateway }}</label>
-                <div class="col-sm-10">
-                    <select name="payment_mastercard_api_gateway" id="select-api-gateway" class="form-select">
-                      {% if payment_mastercard_api_gateway == 'api_na' %}
-                        <option value="api_na" selected="selected">{{ text_api_na }}</option>
-                    {% else %}
-                        <option value="api_na">{{ text_api_na }}</option>
-                    {% endif %}
-                    {% if payment_mastercard_api_gateway == 'api_eu' %}
-                        <option value="api_eu" selected="selected">{{ text_api_eu }}</option>
-                    {% else %}
-                        <option value="api_eu">{{ text_api_eu }}</option>
-                    {% endif %}
-                    {% if payment_mastercard_api_gateway == 'api_ap' %}
-                        <option value="api_ap" selected="selected">{{ text_api_ap }}</option>
-                    {% else %}
-                        <option value="api_ap">{{ text_api_ap }}</option>
-                    {% endif %}
-                    {% if payment_mastercard_api_gateway == 'api_mtf' %}
-                        <option value="api_mtf" selected="selected">{{ text_api_mtf }}</option>
-                    {% else %}
-                        <option value="api_mtf">{{ text_api_mtf }}</option>
-                    {% endif %}
-                    {% if payment_mastercard_api_gateway == 'api_other' %}
-                        <option value="api_other" selected="selected">{{ text_api_other }}</option>
-                    {% else %}
-                        <option value="api_other">{{ text_api_other }}</option>
-                    {% endif %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3" id="custom-url-container">
-                <label for="api-gateway-other" class="col-sm-2 col-form-label">{{ entry_api_gateway_other }}</label>
-                <div class="col-sm-10">
-                  <input type="text" name="payment_mastercard_api_gateway_other" value="{{ payment_mastercard_api_gateway_other }}"  id="api-gateway-other" class="form-control"/>
-                  <div class="form-text">{{ help_geocode }}</div>
-                </div>
-              </div>
-
             </div>
 
-            <div id="tab-additional" class="tab-pane">
-              
-              <div class="row mb-3">
-                <label for="input-debug" class="col-sm-2 col-form-label">{{ entry_debug }}</label>
-                <div class="col-sm-10">
-                    <select name="payment_mastercard_debug" id="input-debug" class="form-select">
-                      {% if payment_mastercard_debug %}
-                        <option value="1" selected="selected">{{ text_yes }}</option>
-                        <option value="0">{{ text_no }}</option>
-                    {% else %}
-                        <option value="1">{{ text_yes }}</option>
-                        <option value="0" selected="selected">{{ text_no }}</option>
-                    {% endif %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="order-id-prefix" class="col-sm-2 col-form-label">{{ entry_order_id_prefix }}</label>
-                <div class="col-sm-10">
-                  <input type="text" name="payment_mastercard_order_id_prefix" value="{{ payment_mastercard_order_id_prefix }}"  id="order-id-prefix" class="form-control"/>
-                </div>
-              </div>
-
-             
-              <div class="row mb-3">
-                <label for="approved-status" class="col-sm-2 col-form-label">{{ entry_approved_status }}</label>
-                <div class="col-sm-10">
-                  <select name="payment_mastercard_approved_status_id" id="approved-status" class="form-select">
-                      {% for order_status in order_statuses %}
-                        {% if order_status.order_status_id == payment_mastercard_approved_status_id %}
-                            <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
-                        {% else %}
-                            <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
-                        {% endif %}
-                      {% endfor %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="declined-status" class="col-sm-2 col-form-label">{{ entry_declined_status }}</label>
-                <div class="col-sm-10">
-                  <select name="payment_mastercard_declined_status_id" id="declined-status" class="form-select">
-                    {% for order_status in order_statuses %}
-                      {% if order_status.order_status_id == payment_mastercard_declined_status_id %}
-                          <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
-                      {% else %}
-                          <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
-                      {% endif %}
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="pending-status" class="col-sm-2 col-form-label">{{ entry_pending_status }}</label>
-                <div class="col-sm-10">
-                  <select name="payment_mastercard_pending_status_id" id="pending-status" class="form-select">
-                      {% for order_status in order_statuses %}
-                        {% if order_status.order_status_id == payment_mastercard_pending_status_id %}
-                            <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
-                        {% else %}
-                            <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
-                        {% endif %}
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="risk-review-status" class="col-sm-2 col-form-label">{{ entry_risk_review_status }}</label>
-                <div class="col-sm-10">
-                  <select name="payment_mastercard_risk_review_status_id" id="risk-review-status" class="form-select">
-                    {% for order_status in order_statuses %}
-                      {% if order_status.order_status_id == payment_mastercard_risk_review_status_id %}
-                          <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
-                      {% else %}
-                          <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
-                      {% endif %}
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <label for="risk-declined-status" class="col-sm-2 col-form-label">{{ entry_risk_declined_status }}</label>
-                <div class="col-sm-10">
-                  <select name="payment_mastercard_risk_declined_status_id" id="risk-declined-status" class="form-select">
-                      {% for order_status in order_statuses %}
-                        {% if order_status.order_status_id == payment_mastercard_risk_declined_status_id %}
-                            <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
-                        {% else %}
-                            <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
-                        {% endif %}
-                      {% endfor %}
-                  </select>
-                </div>
-              </div>
-              </form>
-            </div>
-
-      
             
-             </div>
-</div>
 
-{{ footer }}
+            <div class="row settings-division integration-model-container">
+              <label for="integration-model" class="col-sm-2 col-form-label">{{ entry_integration_model }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_integration_model" id="integration-model" class="form-select">
+                  {% if payment_mastercard_integration_model == 'hostedcheckout' %}
+                  <option value="hostedcheckout" selected="selected">{{ text_hostedcheckout }}</option>
+                  {# <option value="hostedsession">{{ text_hostedsession }}</option> #}
+                  {# {% else %}
+                  <option value="hostedcheckout">{{ text_hostedcheckout }}</option>
+                  <option value="hostedsession" selected="selected">{{ text_hostedsession }}</option> #}
+                  {% endif %}
+                </select>
+              </div>
+            </div>
+
+            <div class="row settings-division" id="hc-type-container">
+              <label for="hc-type" class="col-sm-2 col-form-label">{{ entry_hc_type }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_hc_type" id="hc-type" class="form-select">
+                  {% if payment_mastercard_hc_type == 'redirect' %}
+                  <option value="redirect" selected="selected">{{ text_redirect }}</option>
+                  <option value="modal">{{ text_modal }}</option>
+                  {% else %}
+                  <option value="redirect">{{ text_redirect }}</option>
+                  <option value="modal" selected="selected">{{ text_modal }}</option>
+                  {% endif %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_checkout_interaction }}</label>
+              </div>
+            </div>
+          </section>
+
+          <section class="api-credentials sec-divider">
+            <h2>{{ api_creds_head }}</h2>
+            <label class="section-description" for="integeration-settings" class="col-12">{{ api_creds_desc }}</label>
+            <div class="row settings-division test-mode-switcher">
+              <label for="test-mode" class="col-sm-2 col-form-label">{{ entry_test }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_test" id="test-mode" class="form-select">
+                  {% if payment_mastercard_test %}
+                  <option value="1" selected="selected">{{ text_yes }}</option>
+                  <option value="0">{{ text_no }}</option>
+                  {% else %}
+                  <option value="1">{{ text_yes }}</option>
+                  <option value="0" selected="selected">{{ text_no }}</option>
+                  {% endif %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_test_mode }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division required" id="custom-url-container">
+              <label for="api-gateway-other" class="col-sm-2 col-form-label">{{ entry_api_gateway_other }}</label>
+              <div class="col-sm-10">
+                {% if error_api_gateway_other %}
+                  <input type="text" name="payment_mastercard_api_gateway_other"
+                    value="{{ payment_mastercard_api_gateway_other }}" id="api-gateway-other"
+                    class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_api_gateway_other }}</div>
+                {% else %}
+                  <input type="text" name="payment_mastercard_api_gateway_other"
+                    value="{{ payment_mastercard_api_gateway_other }}" id="api-gateway-other"
+                    class="form-control" />
+                {% endif %}
+                
+                <div class="form-text">{{ help_geocode }}</div>
+                <label class="mastercard-admin-notes">{{ info_custom_gateway_url }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division required" id="live-merchant-container" style="display: none;">
+              <label for="live-merchant-id" class="col-sm-2 col-form-label">{{ entry_live_merchant_id }}</label>
+              <div class="col-sm-10">
+                {% if error_live_merchant_id %}
+                <input type="text" name="payment_mastercard_live_merchant_id"
+                  value="{{ payment_mastercard_live_merchant_id }}" id="live-merchant-id"
+                  class="form-control is-invalid" />
+                <div class="text-danger">{{ error_live_merchant_id }}</div>
+                {% else %}
+                <input type="text" name="payment_mastercard_live_merchant_id"
+                  value="{{ payment_mastercard_live_merchant_id }}" id="live-merchant-id" class="form-control" />
+                {% endif %}
+                <label class="mastercard-admin-notes"> {{ info_merchant_id }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division required" id="live-password-container" style="display: none;">
+              <label for="live-api-password" class="col-sm-2 col-form-label">{{ entry_live_api_password }}</label>
+              <div class="col-sm-10">
+                {% if error_live_api_password %}
+                <input type="password" name="payment_mastercard_live_api_password"
+                  value="{{ payment_mastercard_live_api_password }}" id="live-api-password"
+                  class="form-control is-invalid" />
+                <div class="text-danger">{{ error_live_api_password }}</div>
+                {% else %}
+                <input type="password" name="payment_mastercard_live_api_password"
+                  value="{{ payment_mastercard_live_api_password }}" id="live-api-password" class="form-control" />
+                {% endif %}
+                <label class="mastercard-admin-notes"> {{ info_api_password }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division required" id="test-merchant-container" style="display: none;">
+              <label for="test-merchant-id" class="col-sm-2 col-form-label">{{ entry_test_merchant_id }}</label>
+              <div class="col-sm-10">
+                {% if error_test_merchant_id %}
+                <input type="text" name="payment_mastercard_test_merchant_id"
+                  value="{{ payment_mastercard_test_merchant_id }}" id="test-merchant-id"
+                  class="form-control is-invalid" />
+                <div class="text-danger">{{ error_test_merchant_id }}</div>
+                {% else %}
+                <input type="text" name="payment_mastercard_test_merchant_id"
+                  value="{{ payment_mastercard_test_merchant_id }}" id="test-merchant-id" class="form-control" />
+                {% endif %}
+                <label class="mastercard-admin-notes"> {{ info_test_merchant_id }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division required" id="test-password-container" style="display: none;">
+              <label for="test-api-password" class="col-sm-2 col-form-label">{{ entry_test_api_password }}</label>
+              <div class="col-sm-10">
+                {% if error_test_api_password %}
+                <input type="password" name="payment_mastercard_test_api_password"
+                  value="{{ payment_mastercard_test_api_password }}" id="test-api-password"
+                  class="form-control is-invalid" />
+                <div class="text-danger">{{ error_test_api_password }}</div>
+                {% else %}
+                <input type="password" name="payment_mastercard_test_api_password"
+                  value="{{ payment_mastercard_test_api_password }}" id="test-api-password" class="form-control" />
+                {% endif %}
+                <label class="mastercard-admin-notes"> {{ info_test_api_password }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division" id="live-webhook-container">
+              <label for="live-notification-secret" class="col-sm-2 col-form-label">{{ entry_live_notification_secret
+                }}</label>
+              <div class="col-sm-10">
+                <input type="password" name="payment_mastercard_live_notification_secret"
+                  value="{{ payment_mastercard_live_notification_secret }}" id="live-notification-secret"
+                  class="form-control" />
+                  <label class="mastercard-admin-notes"> {{ info_webhook_secret }}</label>
+              </div>
+            </div>
+            <div class="row settings-division" id="test-webhook-container">
+              <label for="test-notification-secret" class="col-sm-2 col-form-label">{{ entry_test_notification_secret
+                }}</label>
+              <div class="col-sm-10">
+                <input type="password" name="payment_mastercard_test_notification_secret"
+                  value="{{ payment_mastercard_test_notification_secret }}"
+                  id="payment_mastercard_test_notification_secret" class="form-control" />
+                  <label class="mastercard-admin-notes"> {{ info_test_webhook_secret }}</label>
+              </div>
+            </div>
+
+          </section>
+
+          <section class="adtnl-configuration sec-divider">
+            <h2>{{ adtn_conf_head }}</h2>
+            <label class="section-description" for="integeration-settings" class="col-12">{{ adtn_conf_desc }}</label>
+
+          <div class="row settings-division">
+            <label for="input-debug" class="col-sm-2 col-form-label">{{ entry_debug }}</label>
+            <div class="col-sm-10">
+              <select name="payment_mastercard_debug" id="input-debug" class="form-select">
+                {% if payment_mastercard_debug %}
+                <option value="1" selected="selected">{{ text_yes }}</option>
+                <option value="0">{{ text_no }}</option>
+                {% else %}
+                <option value="1">{{ text_yes }}</option>
+                <option value="0" selected="selected">{{ text_no }}</option>
+                {% endif %}
+              </select>
+              <label class="mastercard-admin-notes"> {{ info_debug }}</label>
+            </div>
+          </div>
+
+        
+
+            <div class="row settings-division">
+              <label for="order-id-prefix" class="col-sm-2 col-form-label">{{ entry_order_id_prefix }}</label>
+              <div class="col-sm-10">
+                <input type="text" name="payment_mastercard_order_id_prefix"
+                  value="{{ payment_mastercard_order_id_prefix }}" id="order-id-prefix" class="form-control" />
+                  <label class="mastercard-admin-notes"> {{ info_order_id_prefix }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division">
+              <label for="send-line-items" class="col-sm-2 col-form-label">{{ entry_send_line_items }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_send_line_items" id="send-line-items" class="form-select">
+                  {% if payment_mastercard_send_line_items %}
+                  <option value="1" selected="selected">{{ text_yes }}</option>
+                  <option value="0">{{ text_no }}</option>
+                  {% else %}
+                  <option value="1">{{ text_yes }}</option>
+                  <option value="0" selected="selected">{{ text_no }}</option>
+                  {% endif %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_send_line_items }}</label>
+              </div>
+            </div>
+           
+          
+
+            <div class="row settings-division">
+              <label for="approved-status" class="col-sm-2 col-form-label">{{ entry_approved_status }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_approved_status_id" id="approved-status" class="form-select">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == payment_mastercard_approved_status_id %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}
+                  </option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_approved_status }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division">
+              <label for="declined-status" class="col-sm-2 col-form-label">{{ entry_declined_status }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_declined_status_id" id="declined-status" class="form-select">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == payment_mastercard_declined_status_id %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}
+                  </option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_declined_status }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division">
+              <label for="pending-status" class="col-sm-2 col-form-label">{{ entry_pending_status }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_pending_status_id" id="pending-status" class="form-select">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == payment_mastercard_pending_status_id %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}
+                  </option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_pending_status }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division">
+              <label for="risk-review-status" class="col-sm-2 col-form-label">{{ entry_risk_review_status }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_risk_review_status_id" id="risk-review-status" class="form-select">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == payment_mastercard_risk_review_status_id %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}
+                  </option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_risk_review_required_status }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division">
+              <label for="risk-declined-status" class="col-sm-2 col-form-label">{{ entry_risk_declined_status }}</label>
+              <div class="col-sm-10">
+                <select name="payment_mastercard_risk_declined_status_id" id="risk-declined-status" class="form-select">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == payment_mastercard_risk_declined_status_id %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}
+                  </option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+                <label class="mastercard-admin-notes"> {{ info_declined_by_risk_assessment }}</label>
+              </div>
+            </div>
+
+            <div class="row settings-division">
+              <label for="sort-order" class="col-sm-2 col-form-label">{{ entry_sort_order }}</label>
+              <div class="col-sm-10">
+                <input type="text" name="payment_mastercard_sort_order" value="{{ payment_mastercard_sort_order }}"
+                  id="sort-order" class="form-control" />
+                <div id="error-meta-title" class="invalid-feedback"></div>
+                <label class="mastercard-admin-notes"> {{ info_sort_order }}</label>
+              </div>
+            </div>
+          <div class="merchant-info-parent-wrapper">
+            <div class="row settings-division" id="custom-merchant-info-container">
+              <label for="payment_mastercard_merchant_info" class="col-sm-2 col-form-label">{{ send_merchant_info_label
+                }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="payment_mastercard_merchant_info" value="1" id="input-status"
+                    class="form-check-input" {{ payment_mastercard_merchant_info ? 'checked' : '' }}>
+                    <label class="status-label"> Enabled </label>
+                </div>
+                <label class="mastercard-admin-notes"> {{ info_merchant_info }}</label>
+              </div>
+            </div>
+
+            <div class="row merchant-information-data-items">
+              <div class="row settings-division required" id="merchant-name-container">
+                <label for="payment_mastercard_merchant_name" class="col-sm-2 col-form-label">{{ merchant_name_label
+                  }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_name %}
+                  <input type="text" name="payment_mastercard_merchant_name"
+                    value="{{ payment_mastercard_merchant_name }}" id="payment_mastercard_merchant_name"
+                    class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_name }}</div>
+                  {% else %}
+                  <input type="text" name="payment_mastercard_merchant_name"
+                    value="{{ payment_mastercard_merchant_name }}" id="payment_mastercard_merchant_name"
+                    class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_merchant_name }}</label>
+                </div>
+              </div>
+
+              <div class="row settings-division" id="merchant-adress-one-container">
+                <label for="payment_mastercard_merchant_address_one" class="col-sm-2 col-form-label">{{
+                  merchant_adrs1_label }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_address_one %}
+                  <input type="text" name="payment_mastercard_merchant_address_one"
+                    value="{{ payment_mastercard_merchant_address_one }}" id="payment_mastercard_merchant_address_one"
+                    class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_address_one }}</div>
+                  {% else %}
+                  <input type="text" name="payment_mastercard_merchant_address_one"
+                    value="{{ payment_mastercard_merchant_address_one }}" id="payment_mastercard_merchant_address_one"
+                    class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_adrs_line_1 }}</label>
+                </div>
+              </div>
+
+
+              <div class="row settings-division" id="merchant-adress-two-container">
+                <label for="payment_mastercard_merchant_address_two" class="col-sm-2 col-form-label">{{
+                  merchant_adrs2_label }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_address_two %}
+                  <input type="text" name="payment_mastercard_merchant_address_two"
+                    value="{{ payment_mastercard_merchant_address_two }}" id="payment_mastercard_merchant_address_two"
+                    class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_address_two }}</div>
+                  {% else %}
+                  <input type="text" name="payment_mastercard_merchant_address_two"
+                    value="{{ payment_mastercard_merchant_address_two }}" id="payment_mastercard_merchant_address_two"
+                    class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_adrs_line_2 }}</label>
+                </div>
+              </div>
+
+
+              <div class="row settings-division" id="merchant-postal-zip-code-container">
+                <label for="payment_mastercard_merchant_address_postal_zip_code" class="col-sm-2 col-form-label">{{
+                  merchant_adrs3_label }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_address_postal_zip_code %}
+                  <input type="text" name="payment_mastercard_merchant_address_postal_zip_code"
+                    value="{{ payment_mastercard_merchant_address_postal_zip_code }}"
+                    id="payment_mastercard_merchant_address_postal_zip_code" class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_address_postal_zip_code }}</div>
+                  {% else %}
+                  <input type="text" name="payment_mastercard_merchant_address_postal_zip_code"
+                    value="{{ payment_mastercard_merchant_address_postal_zip_code }}"
+                    id="payment_mastercard_merchant_address_postal_zip_code" class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_postal_code }}</label>
+                </div>
+              </div>
+
+
+              <div class="row settings-division" id="address-line-country-state">
+                <label for="payment_mastercard_merchant_country_state" class="col-sm-2 col-form-label">{{
+                  merchant_adrs4_label }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_country_state %}
+                  <input type="text" name="payment_mastercard_merchant_country_state"
+                    value="{{ payment_mastercard_merchant_country_state }}"
+                    id="payment_mastercard_merchant_country_state" class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_country_state }}</div>
+                  {% else %}
+                  <input type="text" name="payment_mastercard_merchant_country_state"
+                    value="{{ payment_mastercard_merchant_country_state }}"
+                    id="payment_mastercard_merchant_country_state" class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_country_state }}</label>
+                </div>
+              </div>
+
+
+              <div class="row settings-division" id="address-line-email">
+                <label for="payment_mastercard_address_line_email" class="col-sm-2 col-form-label">{{
+                  merchant_email_label }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_email %}
+                  <input type="text" name="payment_mastercard_address_line_email"
+                    value="{{ payment_mastercard_address_line_email }}" id="payment_mastercard_address_line_email"
+                    class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_email }}</div>
+                  {% else %}
+                  <input type="text" name="payment_mastercard_address_line_email"
+                    value="{{ payment_mastercard_address_line_email }}" id="payment_mastercard_address_line_email"
+                    class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_merchant_email }}</label>
+                </div>
+              </div>
+
+
+              <div class="row settings-division" id="merchant-tel-container">
+                <label for="payment_mastercard_address_line_phone" class="col-sm-2 col-form-label">{{
+                  merchant_phone_label }}</label>
+                <div class="col-sm-10">
+                  {% if error_merchant_phone %}
+                  <input type="tel" name="payment_mastercard_address_line_phone"
+                    value="{{ payment_mastercard_address_line_phone }}" id="payment_mastercard_address_line_phone"
+                    class="form-control is-invalid" />
+                  <div class="text-danger">{{ error_merchant_phone }}</div>
+                  {% else %}
+                  <input type="tel" name="payment_mastercard_address_line_phone"
+                    value="{{ payment_mastercard_address_line_phone }}" id="payment_mastercard_address_line_phone"
+                    class="form-control" />
+                  {% endif %}
+                  <label class="mastercard-admin-notes"> {{ info_merchant_phone }}</label>
+                </div>
+              </div>
+
+
+              <div class="row settings-division">
+                <label for="payment_mastercard_merchant_logo" class="col-sm-2 col-form-label">{{ merchant_logo_label
+                  }}</label>
+                <div class="col-sm-10">
+                <div class="wrapper">
+                  <div class="border rounded d-block" style="max-width: 300px;">
+                    <img src="{{ image_path }}" alt="" title="" id="thumb-image" data-oc-placeholder=".././extension/mastercard/admin/view/image/payment/mclogo.svg" class="img-fluid" />
+
+                    <input type="hidden" name="payment_mastercard_merchant_logo"
+                      value="{{ payment_mastercard_merchant_logo }}" id="input-image" />
+                    <div class="d-grid">
+                      <button type="button" data-oc-toggle="image" data-oc-target="#input-image"
+                        data-oc-thumb="#thumb-image" class="btn btn-primary rounded-0">
+                        <i class="fa-solid fa-pencil"></i> {{ button_edit }}
+                      </button>
+                      <button type="button" data-oc-toggle="clear" data-oc-target="#input-image"
+                        data-oc-thumb="#thumb-image" class="btn btn-warning rounded-0">
+                        <i class="fa-regular fa-trash-can"></i> {{ button_clear }}
+                      </button>
+                    </div>
+                   
+                  </div>
+                  <div class="error_placments">
+                    {% if error_payment_mastercard_merchant_logo %}
+                      <div class="text-danger">{{ error_payment_mastercard_merchant_logo }}</div>
+                    {% endif %}
+                  </div>
+                </div> 
+                  <label class="mastercard-admin-notes"> {{ info_merchant_logo }}</label>
+                </div>
+          
+              </div>
+              
+            </div>
+        </div>
+        </form>
+      </div>
+
+
+
+    </div>
+  </div>
+
+  {{ footer }}

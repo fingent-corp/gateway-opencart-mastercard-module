@@ -44,7 +44,7 @@
         embedTarget.innerHTML = ''; 
     }
 
-    // Function to load Checkout library and show embedded page
+    // Function to load Checkout library and show embedded Form
     function loadCheckoutLibrary() {
         clearEmbedTarget();
         checkoutLoaded = false; 
@@ -59,7 +59,7 @@
         });
     }
 
-    // Function to show the embedded page after Checkout library is loaded
+    // Function to show the embedded Form after Checkout library is loaded
     function showEmbeddedPage(targetId) {
         if (!checkoutLoaded) {
             console.error('Checkout library not loaded');

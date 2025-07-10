@@ -45,14 +45,26 @@
 <div>
 	<div class="parent_wrapper">
 		{% if txn.status == 'AUTHORIZED'%}
-		<div class="text-right refund_button_container">
-			<button id="captureButton" class="btn_capture btn btn-primary" type="button" data-id="{{ user_token }}"
-				data-order="{{ txn.oc_order_id }}"> <i class="fa fa-plus-circle"></i> {{ text_capture_button }}
-			</button>
-			<span class="img_loading_captureButton" style="display:none;">
-				<i class="fa fa-cog fa-spin fa-lg capture_Spinner"></i>
-			</span>
+		<div class="authorize-actions-container">
+			<div class="text-right refund_button_container">
+				<button id="captureButton" class="btn_capture btn btn-primary" type="button" data-id="{{ user_token }}"
+					data-order="{{ txn.oc_order_id }}"> <i class="fa fa-plus-circle"></i> {{ text_capture_button }}
+				</button>
+				<span class="img_loading_captureButton" style="display:none;">
+					<i class="fa fa-cog fa-spin fa-lg capture_Spinner"></i>
+				</span>
+			</div>
+
+			<div class="text-right void_button_container">
+				<button id="voidButton" class="btn_void btn btn-primary" type="button" data-id="{{ user_token }}"
+					data-order="{{ txn.oc_order_id }}"> <i class="fa fa-plus-circle"></i> {{ text_void_button }}
+				</button>
+				<span class="img_loading_voidButton" style="display:none;">
+					<i class="fa fa-cog fa-spin fa-lg void_Spinner"></i>
+				</span>
+			</div>
 		</div>
+
 		{% elseif txn.status == 'CAPTURED' or txn.status == 'Captured' %}
 
 		<div class="refund_wrapper">
@@ -188,7 +200,7 @@
 						}, 2000);
 
 					} else {
-						message_container.addClass('alert alert-danger');
+						message_container.text(data.msg).addClass('alert alert-danger');
 						captureButton.prop('disabled', false);
 					}
 				},
@@ -226,6 +238,7 @@
 					loader.hide();
 					
 					message_container.text(data.msg).addClass('alert alert-success');
+					
 					if (!data.error) {
 						loader.hide();
 						refundButton.hide();
@@ -234,7 +247,7 @@
 							location.reload(true);
 						}, 2000);
 					} else {
-						message_container.addClass('alert alert-danger');
+						message_container.text(data.msg).addClass('alert alert-danger');
 						captureButton.prop('disabled', false);
 					}
 				},
@@ -297,7 +310,7 @@
 								location.reload(true);
 							}, 2000);
 						} else {
-							message_container.addClass('alert alert-danger');
+							message_container.text(data.msg).addClass('alert alert-danger');
 							captureButton.prop('disabled', false);
 						}
 					},
@@ -306,6 +319,63 @@
 					}
 				});
 			}
+		});
+
+		$("button.btn_void").on('click', function (e) {
+			if (!confirm("Are you sure, you want to void this authorization")) {
+				return;
+			}
+
+			var voidButton = $(this);
+			var btnCapture = $('.btn_capture');
+			var refundButton = $('#refundButton');
+			var loader = voidButton.siblings('.img_loading_voidButton');
+			var txn_id = $(this).val();
+			var merchant_id = $(this).attr('data-merchant');
+			var void_order_id = $(this).attr('data-order');
+			var voi_amount = $(this).attr('data-amount');
+			var user_token = $(this).attr('data-id');
+			var message_container = $('#mgps_transaction_msg_');
+			var voidurlWithUserToken = 'index.php?route=extension/mastercard/payment/mastercard.void&user_token={{ user_token }}'
+
+
+			$.ajax({
+				type: 'POST',
+				dataType: 'json',
+				data: { 
+					'order_id': void_order_id ,
+				},
+				url: voidurlWithUserToken
+				,
+				beforeSend: function () {
+					loader.show();
+					voidButton.prop('disabled', true);
+				},
+				success: function (data) {
+					if (!data.error) {
+						loader.hide();
+						voidButton.hide();
+						btnCapture.hide();
+						$('#action_tab').hide();
+						message_container.text(data.msg).addClass('alert alert-success');
+						setTimeout(function () {
+							message_container.hide();
+							location.reload(true);
+						}, 2000);
+
+					} else {
+						message_container.text(data.msg).addClass('alert alert-danger');
+						voidButton.prop('disabled', false);
+						setTimeout(function () {
+							message_container.hide();
+							location.reload(true);
+						}, 2000);
+					}
+				},
+				error: function (xhr, status, error) {
+					console.error("AJAX call failed:", error);
+				}
+			});
 		});
 
 

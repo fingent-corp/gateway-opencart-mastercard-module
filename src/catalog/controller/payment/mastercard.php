@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2023 Mastercard
+ * Copyright (c) 2019-2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * @package  Mastercard
+ * @version  GIT: @1.3.3@
+ * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 
 namespace Opencart\Catalog\Controller\Extension\Mastercard\Payment;
 
-class Mastercard extends \Opencart\System\Engine\Controller{
+use Opencart\Catalog\Controller\Extension\Mastercard\Payment\MasterCardPaymentException;
+
+class Mastercard extends \Opencart\System\Engine\Controller {
     const ORDER_CAPTURED = '15';
     const ORDER_VOIDED = '16';
     const ORDER_CANCELLED = '7';
@@ -26,94 +32,132 @@ class Mastercard extends \Opencart\System\Engine\Controller{
     const HEADER_WEBHOOK_SECRET = 'HTTP_X_NOTIFICATION_SECRET';
     const HEADER_WEBHOOK_ATTEMPT = 'HTTP_X_NOTIFICATION_ATTEMPT';
     const HEADER_WEBHOOK_ID = 'HTTP_X_NOTIFICATION_ID';
+    const MASTER_CARD_MODEL_PATH = 'extension/mastercard/payment/mastercard';
+    const ACCOUNT_CUSTOMER_MODEL_PATH = 'account/customer';
     protected $orderAmount = 0;
 
     /**
      * @return mixed
      */
-    public function index(){
-        $this->load->language('extension/mastercard/payment/mastercard');
-        $this->load->model('extension/mastercard/payment/mastercard');
+    public function index() {
+        $this->load->language(self::MASTER_CARD_MODEL_PATH);
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
+    
         $gatewayUri = $this->model_extension_mastercard_payment_mastercard->getGatewayUri();
         $integrationModel = $this->model_extension_mastercard_payment_mastercard->getIntegrationModel();
-        if (!empty($this->session->data['order_id']) && !empty($this->session->data['currency']) && !empty($this->session->data['shipping_address'])) {
+    
+        $view = null;
+    
+        if ($this->isValidSession($integrationModel)) {
             try {
-                if ($integrationModel === 'hostedcheckout') {
-                    unset($this->session->data['HostedCheckout_sessionId']);
-                    $built = $this->buildCheckoutSession();
-                    if ($built === true) {
-                        $data['configured_variables'] = json_encode($this->configureHostedCheckout());
-                    }
-                } 
+                unset($this->session->data['HostedCheckout_sessionId']);
+                $data['configured_variables'] = $this->getConfiguredVariables();
             } catch (\Exception $e) {
                 $data['error_session'] = $e->getMessage();
             }
-        }
-        if (empty($data['error_session'])) {
-            if ($integrationModel === 'hostedcheckout') { 
-
-                $cacheBust = (int)round(microtime(true));               
-                $data['hosted_checkout_js'] = $gatewayUri . 'static/checkout/checkout.min.js?_='.$cacheBust;
-                $data['checkout_interaction'] = $this->config->get('payment_mastercard_hc_type');
-                $data['completeCallback'] = $this->url->link('extension/mastercard/payment/mastercard.processHostedCheckout', '', false);
-                $data['cancelCallback'] = $this->url->link('extension/mastercard/payment/mastercard.cancelCallback', '', true);
-                $data['errorCallback'] = $this->url->link('extension/mastercard/payment/mastercard.errorCallback', '', true);   
+    
+            if (empty($data['error_session']) && $integrationModel === 'hostedcheckout') {
                 
-            } 
-
-
-        }
-        if ($integrationModel === 'hostedcheckout') {
-            if (isset($data['configured_variables'])) {
-                $checkout_session_id = json_decode($data['configured_variables']);
-        
-                if ($checkout_session_id && isset($checkout_session_id->session, $checkout_session_id->merchant)) {
-                    $data['session_id'] = $checkout_session_id->session->id;
-                    $data['merchant'] = $checkout_session_id->merchant;
-                    $data['version'] = isset($checkout_session_id->session->version) ? $checkout_session_id->session->version : null;
-                    $data['mgps_order_id'] = $this->getOrderPrefix($this->session->data['order_id']);
-                    $data['order_id'] = $this->session->data['order_id'];
-        
-                    if (isset($this->session->data['mpgs_hosted_checkout']['successIndicator'])) {
-                        $data['success_indicator'] = $this->session->data['mpgs_hosted_checkout']['successIndicator'];
-                    } 
-                    $data['OCSESSID'] = $_COOKIE['OCSESSID'];
-                    $jsonData = json_encode($data);
-                    $data['jsonData'] = $jsonData;
-                    setcookie('OCSESSID', $data['OCSESSID'], time() + 24 * 3600, '/');
+                $data['hosted_checkout_js'] = $this->getHostedCheckoutJsUri($gatewayUri);
+                $data['checkout_interaction'] = $this->config->get('payment_mastercard_hc_type');
+                $data['completeCallback'] = $this->url->link(
+                    'extension/mastercard/payment/mastercard.processHostedCheckout',
+                    '',
+                    false
+                );
+                $data['cancelCallback'] = $this->url->link(
+                    'extension/mastercard/payment/mastercard.cancelCallback',
+                    '',
+                    true
+                );
+                $data['errorCallback'] = $this->url->link(
+                    'extension/mastercard/payment/mastercard.errorCallback',
+                    '',
+                    true
+                );
+    
+                if ($this->isConfiguredVariablesValid($data)) {
+                    $data = array_merge($data, $this->getCheckoutSessionData($data));
+                    $data['jsonData'] = json_encode($data);
+                    $this->setSessionDataCookie($data);
                     $this->document->addScript($data['hosted_checkout_js']);
-                    return $this->load->view('extension/mastercard/payment/mgps_hosted_checkout', $data);
+                    $view = $this->load->view('extension/mastercard/payment/mgps_hosted_checkout', $data);
                 }
             }
-        }           
+        }
+    
+        return $view;
+    }
+    
+    
+    private function isValidSession($integrationModel) {
+        return !empty($this->session->data['order_id']) &&
+               !empty($this->session->data['currency']) &&
+               !empty($this->session->data['shipping_address']) &&
+               $integrationModel === 'hostedcheckout';
+    }
+    
+    private function getConfiguredVariables() {
+        $built = $this->hasCheckoutSession();
+        if ($built === true) {
+            return json_encode($this->configureHostedCheckout());
+        }
+        return null;
+    }
+    
+    private function getHostedCheckoutJsUri($gatewayUri) {
+        $cacheBust = (int)round(microtime(true));
+        return $gatewayUri . 'static/checkout/checkout.min.js?_=' . $cacheBust;
+    }
+    
+    private function isConfiguredVariablesValid($data) {
+        return isset($data['configured_variables']);
+    }
+    
+    private function getCheckoutSessionData($data) {
+        $checkoutSessionId = json_decode($data['configured_variables']);
+        return [
+            'session_id' => $checkoutSessionId->session->id,
+            'merchant' => $checkoutSessionId->merchant,
+            'version' => $checkoutSessionId->session->version ?? null,
+            'mgps_order_id' => $this->getOrderPrefix($this->session->data['order_id']),
+            'order_id' => $this->session->data['order_id'],
+            'success_indicator' => $this->session->data['mpgs_hosted_checkout']['successIndicator'] ?? null,
+            'OCSESSID' => $this->request->cookie['OCSESSID'] ?? ''
+        ];
+    }
+
+    private function setSessionDataCookie($data) {
+        setcookie('OCSESSID', $data['OCSESSID'], time() + 24 * 3600, '/');
     }
     
     /**
      * @param $route
      */
-    public function init($route){
+    public function init($route) {
         $allowed = ['checkout/checkout'];
         if (!in_array($route, $allowed)) {
             return;
         }
-        $this->load->model('extension/mastercard/payment/mastercard');
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
     }
 
     /**
      * @return bool
      * @throws Exception
      */
-    public function buildCheckoutSession(){
-        $this->load->model('extension/mastercard/payment/mastercard');
+    public function hasCheckoutSession() {
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
         $this->model_extension_mastercard_payment_mastercard->clearCheckoutSession();
         $order = $this->getOrder();
         $txnId = uniqid(sprintf('%s-', $order['id']));
         $requestData = [
             'apiOperation' => 'INITIATE_CHECKOUT',
-            'partnerSolutionId' => $this->model_extension_mastercard_payment_mastercard->buildPartnerSolutionId(),
+            'partnerSolutionId' => $this->model_extension_mastercard_payment_mastercard
+                ->buildPartnerSolutionId(),
             'order' => array_merge(
               
-                $this->getOrder(), 
+                $this->getOrder(),
                 $this->getOrderItemsTaxAndTotals(),
                 
             ),
@@ -124,16 +168,17 @@ class Mastercard extends \Opencart\System\Engine\Controller{
                 'reference' => $txnId
             ]
         ];
-        $requestData['order']['notificationUrl'] =$this->url->link('extension/mastercard/payment/mastercard.callback', '', true);
+
+        $requestData['order']['notificationUrl'] =
+            $this->url->link('extension/mastercard/payment/mastercard.callback', '', true);
         if (!empty($this->getShippingAddress())) {
             $requestData = array_merge($requestData, ['shipping' => $this->getShippingAddress()]);
         }
         unset($this->session->data['HostedCheckout_sessionId']);
-        $uri = $this->model_extension_mastercard_payment_mastercard->getApiUri() . '/session';  
-        $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('POST', $uri, $requestData); 
+        $uri = $this->model_extension_mastercard_payment_mastercard->getApiUri() . '/session';
+        $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('POST', $uri, $requestData);
         if (!empty($response['result']) && $response['result'] === 'SUCCESS') {
             if ($this->model_extension_mastercard_payment_mastercard->getIntegrationModel() === 'hostedcheckout') {
-               
                 $this->session->data['mpgs_hosted_checkout'] = $response;
                 if (isset($this->session->data['mpgs_hosted_checkout'])) {
                     $this->session->data['mgps_redirect_session'] = $this->session->data['mpgs_hosted_checkout'];
@@ -141,7 +186,7 @@ class Mastercard extends \Opencart\System\Engine\Controller{
             }
             return true;
         } elseif (!empty($response['result']) && $response['result'] === 'ERROR') {
-            throw new \Exception(json_encode($response['error']));
+            throw new \MasterCardPaymentException(json_encode($response['error']));
         }
         return false;
     }
@@ -149,21 +194,72 @@ class Mastercard extends \Opencart\System\Engine\Controller{
     /**
      * @return mixed
      */
-    protected function getInteraction(){
-        $this->load->model('extension/mastercard/payment/mastercard');
-        $integration['merchant']['name'] = $this->config->get('config_name');
-        $integration['operation'] = $this->model_extension_mastercard_payment_mastercard->getPaymentAction();
-        $integration['returnUrl'] = $this->url->link('extension/mastercard/payment/mastercard.processHostedCheckout', '', true);
-        $integration['displayControl']['shipping'] = 'HIDE';
-        $integration['displayControl']['billingAddress'] = 'HIDE';
-        $integration['displayControl']['customerEmail'] = 'HIDE';
+    protected function getInteraction() {
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
+        $this->load->model('tool/image');
+    
+        $merchantLogoUrl = $this->getMerchantLogoUrl();
+        $integration['merchant']['name'] = $this->config->get('payment_mastercard_merchant_name');
+    
+        if ($this->config->get('payment_mastercard_merchant_info') == 1) {
+            if ($merchantLogoUrl) {
+                $integration['merchant']['logo'] = $merchantLogoUrl;
+            }
+    
+            $integration['merchant']['address'] = $this->getMerchantAddress();
+            $this->addContactInfo($integration['merchant']);
+        } else {
+            $integration['merchant']['name'] = $this->config->get('config_name');
+        }
+    
+        $integration['operation'] = $this->model_extension_mastercard_payment_mastercard
+        ->getPaymentAction();
+        $integration['returnUrl'] = $this->url->link(
+            'extension/mastercard/payment/mastercard.processHostedCheckout',
+            '',
+            true
+        );
+        $integration['displayControl'] = [
+            'shipping' => 'HIDE',
+            'billingAddress' => 'HIDE',
+            'customerEmail' => 'HIDE'
+        ];
         return $integration;
     }
-
+    
+    private function getMerchantLogoUrl() {
+        $merchantLogo = $this->config->get('payment_mastercard_merchant_logo');
+        if (!empty($merchantLogo) && is_file(DIR_IMAGE . $merchantLogo)) {
+            return HTTP_SERVER . 'image/' . $merchantLogo;
+        }
+        return '';
+    }
+    
+    private function getMerchantAddress() {
+        $address = [];
+        $this->maybeAdd($address, 'line1', 'payment_mastercard_merchant_address_one');
+        $this->maybeAdd($address, 'line2', 'payment_mastercard_merchant_address_two');
+        $this->maybeAdd($address, 'line3', 'payment_mastercard_merchant_address_postal_zip_code');
+        $this->maybeAdd($address, 'line4', 'payment_mastercard_merchant_country_state');
+        return $address;
+    }
+    
+    private function addContactInfo(&$merchant) {
+        $this->maybeAdd($merchant, 'email', 'payment_mastercard_address_line_email');
+        $this->maybeAdd($merchant, 'phone', 'payment_mastercard_address_line_phone');
+    }
+    
+    private function maybeAdd(&$target, $key, $configKey) {
+        $value = $this->config->get($configKey);
+        if (!empty($value)) {
+            $target[$key] = $value;
+        }
+    }
+    
     /**
      * @return mixed
      */
-    protected function getOrder(){
+    protected function getOrder() {
         $orderId = $this->getOrderPrefix($this->session->data['order_id']);
         $orderData['id'] = $orderId;
         $orderData['reference'] = $orderId;
@@ -178,287 +274,314 @@ class Mastercard extends \Opencart\System\Engine\Controller{
      *
      * @return array
      */
-    protected function getOrderItemsTaxAndTotals(){
-    	    $this->load->helper('utf8');
-            $orderData = [];
-            $sendLineItems = $this->config->get('payment_mastercard_send_line_items');
-            if ($sendLineItems) {
-               
-                $this->load->model('catalog/product');
-                foreach ($this->cart->getProducts() as $product) {
-                    $items = [];
-                    $description = [];
-                    foreach ($product['option'] as $option) {
-                        if ($option['type'] != 'file') {
-                            $value = isset($option['value']) ? $option['value'] : '';
-                        } else {
-                            $uploadInfo = $this->model_tool_upload->getUploadByCode($option['value']);
-                            if ($uploadInfo) {
-                                $value = $uploadInfo['name'];
-                            } else {
-                                $value = '';
-                            }
-                        }
-                        $description[] = $option['name'] . ':' . (utf8_strlen($value) > 20 ? utf8_substr($value, 0,
-                                    20) . '..' : $value);
-                    }
-                    if (!empty($description)) {
-                        $items['description'] = substr(implode(', ', $description), 0, 127);
-                    } elseif ($product['model']) {
-                        $items['description'] = substr($product['model'], 0, 127);
-                    }
-                    $items['name'] = substr($product['name'], 0, 127);
-                    $items['quantity'] = $product['quantity'];
-                    if ($product['model']) {
-                        $items['sku'] = substr($product['model'], 0, 127);
-                    }
-                    $items['unitPrice'] = round($product['price'], 2);
+    protected function getOrderItemsTaxAndTotals() {
+        $this->load->helper('utf8');
+        $orderData = [];
+        $sendLineItems = $this->config->get('payment_mastercard_send_line_items');
     
-                    $orderData['item'][] = $items;
-                }
+        if ($sendLineItems) {
+            $orderData['item'] = $this->getLineItemsFromCart();
+        }
+    
+        $totals = [];
+        $taxes = $this->cart->getTaxes();
+        $total = 0;
+    
+        $results = $this->getSortedTotalExtensions();
+    
+        foreach ($results as $result) {
+            if ($this->config->get('total_' . $result['code'] . '_status')) {
+                $this->load->model('extension/' . $result['extension'] . '/total/'
+                . $result['code']);
+                $modelMethod = $this->{'model_extension_'
+                    . $result['extension'] . '_total_'
+                    . $result['code']}->getTotal;
+                $modelMethod($totals, $taxes, $total);
             }
-            /** Tax, Shipping, Discount and Order Total */
-            $totals = [];
-            $taxes = $this->cart->getTaxes();
-            $total = 0;
-            $this->load->model('setting/extension');
+        }
+        $totals = $this->sortTotalsByOrder($totals);
+        $totalsParsed = $this->parseTotalsForBreakdown($totals, $total);
+         
+        if ($totalsParsed['final_total'])  {
+            $this->orderAmount = $totalsParsed['formatted_total'];
+            $orderData['amount'] = $totalsParsed['formatted_total'];
     
-            // Display prices
-            $sort_order = [];
-            $results = $this->model_setting_extension->getExtensionsByType('total');
-            foreach ($results as $key => $value) {
-				$sort_order[$key] = $this->config->get('total_' . $value['code'] . '_sort_order');
-			}
-            array_multisort($sort_order, SORT_ASC, $results);
-            foreach ($results as $result) {
-				if ($this->config->get('total_' . $result['code'] . '_status')) {
-					$this->load->model('extension/' . $result['extension'] . '/total/' . $result['code']);
-					// __call can not pass-by-reference so we get PHP to call it as an anonymous function.
-					($this->{'model_extension_' . $result['extension'] . '_total_' . $result['code']}->getTotal)($totals, $taxes, $total);
-				}
-			}
-
-            $sort_order = [];
-            foreach ($totals as $key => $value) {
-				$sort_order[$key] = $value['sort_order'];
-			}
-
-			array_multisort($sort_order, SORT_ASC, $totals);
-            $skipTotals = [
-                'sub_total',
-                'total',
-                'tax'
-            ];
-            $formattedTotal = round($total, 2);
-            $subTotal = 0;
-            $tax = 0;
-            $taxInfo = [];
-            $shipping = 0;
+            if ($sendLineItems) {
+                $orderData['itemAmount'] = $totalsParsed['sub_total'];
+                $orderData['shippingAndHandlingAmount'] = $totalsParsed['shipping'];
+                $orderData['taxAmount'] = $totalsParsed['tax'];
+            }
+        }
+        
+        if (!empty($totalsParsed['tax_info']) && $sendLineItems) {
+            $orderData['tax'] = $totalsParsed['tax_info'];
+        }
     
-            foreach ($totals as $key => $value) {
-                $formattedValue = round($value['value'], 2);
-                if ($value['code'] == 'sub_total') {
-                    $subTotal += $formattedValue;
-                }
-                if ($value['code'] == 'tax') {
-                    $tax += $formattedValue;
-                    $taxInfo[] = [
-                        'amount' => $formattedValue,
-                        'type' => $value['title']
-                    ];
-                }
+        return $orderData;
+    }
+    
+    private function getLineItemsFromCart() {
+        $this->load->model('catalog/product');
+        $this->load->model('tool/upload');
+        $lineItems = [];
+    
+        foreach ($this->cart->getProducts() as $product) {
+            $item = [];
+    
+            $item['description'] = $this->buildDescription($product);
+            $item['name'] = $this->truncate($product['name']);
+            $item['quantity'] = $product['quantity'];
+            $item['sku'] = $product['model'] ? $this->truncate($product['model']) : '';
+            $item['unitPrice'] = round($product['price'], 2);
+    
+            $lineItems[] = $item;
+        }
+    
+        return $lineItems;
+    }
+    
+    private function buildDescription($product) {
+        $description = [];
+    
+        foreach ($product['option'] as $option) {
+            $value = $this->getOptionValue($option);
+            $shortValue = utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20)
+            . '..' : $value;
+            $description[] = $option['name'] . ':' . $shortValue;
+        }
+    
+        if (!empty($description)) {
+            return substr(implode(', ', $description), 0, 127);
+        }
+    
+        if (!empty($product['model'])) {
+            return $this->truncate($product['model']);
+        }
+    
+        return '';
+    }
+    
+    private function getOptionValue($option) {
+        if ($option['type'] !== 'file') {
+            return isset($option['value']) ? $option['value'] : '';
+        }
+    
+        $uploadInfo = $this->model_tool_upload->getUploadByCode($option['value']);
+        return $uploadInfo ? $uploadInfo['name'] : '';
+    }
+    
+    private function truncate($value, $length = 127) {
+        return substr($value, 0, $length);
+    }
+    
+    
+    private function getSortedTotalExtensions() {
+        $this->load->model('setting/extension');
+        $results = $this->model_setting_extension->getExtensionsByType('total');
+    
+        $sortOrder = [];
+        foreach ($results as $key => $value) {
+            $sortOrder[$key] = $this->config->get('total_' . $value['code'] . '_sort_order');
+        }
+    
+        array_multisort($sortOrder, SORT_ASC, $results);
+        return $results;
+    }
+    
+    private function sortTotalsByOrder($totals) {
+        $sortOrder = [];
+    
+        foreach ($totals as $key => $value) {
+            $sortOrder[$key] = $value['sort_order'];
+        }
+    
+        array_multisort($sortOrder, SORT_ASC, $totals);
+        return $totals;
+    }
+    
+    private function parseTotalsForBreakdown($totals, $formattedTotal) {
+        $skipTotals = ['sub_total', 'total', 'tax'];
+        $subTotal = 0;
+        $tax = 0;
+        $shipping = 0;
+        $taxInfo = [];
+    
+        foreach ($totals as $value) {
+            $formattedValue = round($value['value'], 2);
+    
+            if ($value['code'] === 'sub_total') {
+                $subTotal += $formattedValue;
+            } elseif ($value['code'] === 'tax') {
+                $tax += $formattedValue;
+                $taxInfo[] = [
+                    'amount' => $formattedValue,
+                    'type' => $value['title']
+                ];
+            } else {
+                
                 if (!in_array($value['code'], $skipTotals)) {
                     $shipping += $formattedValue;
                 }
             }
-            $finalTotal = $subTotal + $tax + $shipping;
-            if ($finalTotal == $formattedTotal) {
-                $this->orderAmount = $formattedTotal;
-                $orderData['amount'] = $formattedTotal;
-                if ($sendLineItems) {
-                    $orderData['itemAmount'] = $subTotal;
-                    $orderData['shippingAndHandlingAmount'] = $shipping;
-                    $orderData['taxAmount'] = $tax;
-                }
-            }
-            /** Order Tax Details */
-            if (!empty($taxInfo) && $sendLineItems) {
-                $orderData['tax'] = $taxInfo;
-            }
-            
-            return $orderData;
+        }
+    
+        $finalTotal = $subTotal + $tax + $shipping;
+    
+        return [
+            'sub_total' => $subTotal,
+            'tax' => $tax,
+            'shipping' => $shipping,
+            'tax_info' => $taxInfo,
+            'final_total' => $finalTotal,
+            'formatted_total' => round($formattedTotal, 2)
+        ];
     }
+    
     /**
      * @return array
      */
-    protected function getBillingAddress(){
-
-        $this->load->model('account/customer');
-		$this->load->model('account/address');
+    protected function getBillingAddress() {
+        $this->load->model(self::ACCOUNT_CUSTOMER_MODEL_PATH);
+        $this->load->model('account/address');
         $this->load->model('account/order');
+    
         $billingAddress = [];
-        if ($this->customer->isLogged() && $this->customer->getAddressId()) {
-            if (VERSION >= '4.0.2.0') {
-                $paymentAddress = $this->model_account_address->getAddress($this->customer->getId(),$this->customer->getAddressId());
-                $this->session->data['payment_address'] = $this->model_account_address->getAddress($this->customer->getId(),$this->customer->getAddressId());
-            } else {
-                $this->session->data['payment_address'] = $this->model_account_address->getAddress($this->customer->getAddressId());
-            }
-
-            if (!empty($paymentAddress['city'])) {
-                $billingAddress['address']['city'] = substr($paymentAddress['city'], 0, 100);
-            }
+        $paymentAddress = $this->resolvePaymentAddress();
     
-            if (!empty($paymentAddress['company'])) {
-                $billingAddress['address']['company'] = $paymentAddress['company'];
-            }
+        if (!empty($paymentAddress)) {
+            $billingAddress['address'] = $this->extractAddressFields($paymentAddress);
+        }
     
-            if (!empty($paymentAddress['iso_code_3'])) {
-                $billingAddress['address']['country'] = $paymentAddress['iso_code_3'];
-            }
-    
-            if (!empty($paymentAddress['postcode'])) {
-                $billingAddress['address']['postcodeZip'] = substr($paymentAddress['postcode'], 0, 10);
-            }
-    
-            if (!empty($paymentAddress['zone'])) {
-                $billingAddress['address']['stateProvince'] = substr($paymentAddress['zone'], 0, 20);
-            }
-    
-            if (!empty($paymentAddress['address_1'])) {
-                $billingAddress['address']['street'] = substr($paymentAddress['address_1'], 0, 100);
-            }
-    
-            if (!empty($paymentAddress['address_2'])) {
-                $billingAddress['address']['street2'] = substr($paymentAddress['address_2'], 0, 100);
-            }
-        } 
-        else{
-            if (isset($this->session->data['payment_address'])) {
-                $paymentAddress = $this->session->data['payment_address'];
-                if (!empty($paymentAddress['city'])) {
-                    $billingAddress['address']['city'] = substr($paymentAddress['city'], 0, 100);
-                }
-                if (!empty($paymentAddress['company'])) {
-                    $billingAddress['address']['company'] = $paymentAddress['company'];
-                }
-                if (!empty($paymentAddress['iso_code_3'])) {
-                    $billingAddress['address']['country'] = $paymentAddress['iso_code_3'];
-                }
-                if (!empty($paymentAddress['postcode'])) {
-                    $billingAddress['address']['postcodeZip'] = substr($paymentAddress['postcode'], 0, 10);
-                }
-                if (!empty($paymentAddress['zone'])) {
-                    $billingAddress['address']['stateProvince'] = substr($paymentAddress['zone'], 0, 20);
-                }
-                if (!empty($paymentAddress['address_1'])) {
-                    $billingAddress['address']['street'] = substr($paymentAddress['address_1'], 0, 100);
-                }
-                if (!empty($paymentAddress['address_2'])) {
-                    $billingAddress['address']['street2'] = substr($paymentAddress['address_2'], 0, 100);
-                }
-            } elseif (isset($this->session->data['shipping_address'])){
-                    $paymentAddress = $this->session->data['shipping_address'];
-                    if (!empty($paymentAddress['city'])) {
-                        $billingAddress['address']['city'] = substr($paymentAddress['city'], 0, 100);
-                    }
-                    if (!empty($paymentAddress['company'])) {
-                        $billingAddress['address']['company'] = $paymentAddress['company'];
-                    }
-                    if (!empty($paymentAddress['iso_code_3'])) {
-                        $billingAddress['address']['country'] = $paymentAddress['iso_code_3'];
-                    }
-                    if (!empty($paymentAddress['postcode'])) {
-                        $billingAddress['address']['postcodeZip'] = substr($paymentAddress['postcode'], 0, 10);
-                    }
-                    if (!empty($paymentAddress['zone'])) {
-                        $billingAddress['address']['stateProvince'] = substr($paymentAddress['zone'], 0, 20);
-                    }
-                    if (!empty($paymentAddress['address_1'])) {
-                        $billingAddress['address']['street'] = substr($paymentAddress['address_1'], 0, 100);
-                    }
-                    if (!empty($paymentAddress['address_2'])) {
-                        $billingAddress['address']['street2'] = substr($paymentAddress['address_2'], 0, 100);
-                    }
-            }    
-    }
-
         return $billingAddress;
     }
-
+    
+    private function resolvePaymentAddress() {
+        $address = null;
+        if ($this->customer->isLogged() && $this->customer->getAddressId()) {
+            $address = $this->getCustomerPaymentAddress();
+        } elseif (!empty($this->session->data['payment_address'])) {
+            $address = $this->session->data['payment_address'];
+        } elseif (!empty($this->session->data['shipping_address'])) {
+            $address = $this->session->data['shipping_address'];
+        } else {
+            $address = null;
+        }
+    
+        return $address;
+    }
+    
+    private function getCustomerPaymentAddress() {
+        $customerId = $this->customer->getId();
+        $addressId = $this->customer->getAddressId();
+    
+        if (VERSION >= '4.0.2.0') {
+            $address = $this->model_account_address->getAddress($customerId, $addressId);
+            $this->session->data['payment_address'] = $address;
+            return $address;
+        }
+    
+        $address = $this->model_account_address->getAddress($addressId);
+        $this->session->data['payment_address'] = $address;
+        return $address;
+    }
+    
+    private function extractAddressFields($address) {
+        $fields = [];
+    
+        if (!empty($address['city'])) {
+            $fields['city'] = substr($address['city'], 0, 100);
+        }
+        if (!empty($address['company'])) {
+            $fields['company'] = $address['company'];
+        }
+        if (!empty($address['iso_code_3'])) {
+            $fields['country'] = $address['iso_code_3'];
+        }
+        if (!empty($address['postcode'])) {
+            $fields['postcodeZip'] = substr($address['postcode'], 0, 10);
+        }
+        if (!empty($address['zone'])) {
+            $fields['stateProvince'] = substr($address['zone'], 0, 20);
+        }
+        if (!empty($address['address_1'])) {
+            $fields['street'] = substr($address['address_1'], 0, 100);
+        }
+        if (!empty($address['address_2'])) {
+            $fields['street2'] = substr($address['address_2'], 0, 100);
+        }
+    
+        return $fields;
+    }
+    
     /**
      * @return array
      */
-    protected function getShippingAddress(){
+    protected function getShippingAddress() {
         $shippingAddress = [];
-        if (isset($this->session->data['shipping_address'])) {
-            $shippingAddressData = $this->session->data['shipping_address'];
-
-            if (!empty($shippingAddressData['city'])) {
-                $shippingAddress['address']['city'] = substr($shippingAddressData['city'], 0, 100);
-            }
-
-            if (!empty($shippingAddressData['company'])) {
-                $shippingAddress['address']['company'] = $shippingAddressData['company'];
-            }
-
-            if (!empty($shippingAddressData['iso_code_3'])) {
-                $shippingAddress['address']['country'] = $shippingAddressData['iso_code_3'];
-            }
-
-            if (!empty($shippingAddressData['postcode'])) {
-                $shippingAddress['address']['postcodeZip'] = substr($shippingAddressData['postcode'], 0, 10);
-            }
-
-            if (!empty($shippingAddressData['zone'])) {
-                $shippingAddress['address']['stateProvince'] = substr($shippingAddressData['zone'], 0, 20);
-            }
-
-            if (!empty($shippingAddressData['address_1'])) {
-                $shippingAddress['address']['street'] = substr($shippingAddressData['address_1'], 0, 100);
-            }
-
-            if (!empty($shippingAddressData['address_2'])) {
-                $shippingAddress['address']['street2'] = substr($shippingAddressData['address_2'], 0, 100);
-            }
-
-            if (!empty($shippingAddressData['firstname'])) {
-                $shippingAddress['contact']['firstName'] = substr($shippingAddressData['firstname'], 0, 50);
-            }
-
-            if (!empty($shippingAddressData['lastname'])) {
-                $shippingAddress['contact']['lastName'] = substr($shippingAddressData['lastname'], 0, 50);
-            }
-
-            if ($this->customer->isLogged()) {
-                $this->load->model('account/customer');
-                $customerModel = $this->model_account_customer->getCustomer($this->customer->getId());
-                $shippingAddress['contact']['email'] = $customerModel['email'];
-            } else {
-                $order_id = $this->session->data['order_id'];
-                $query = $this->db->query("SELECT * FROM `oc_order` WHERE `order_id` = $order_id");
-                $shippingData = $query->row;
-                $shippingAddress['contact']['email'] = $shippingData['email'];
-            }
-
+    
+        if (!isset($this->session->data['shipping_address'])) {
+            return $shippingAddress;
         }
-
+    
+        $data = $this->session->data['shipping_address'];
+    
+        $map = [
+            'city'       => ['address.city', 100],
+            'company'    => ['address.company', null],
+            'iso_code_3' => ['address.country', null],
+            'postcode'   => ['address.postcodeZip', 10],
+            'zone'       => ['address.stateProvince', 20],
+            'address_1'  => ['address.street', 100],
+            'address_2'  => ['address.street2', 100],
+            'firstname'  => ['contact.firstName', 50],
+            'lastname'   => ['contact.lastName', 50],
+        ];
+    
+        foreach ($map as $key => [$targetPath, $maxLength]) {
+            if (!empty($data[$key])) {
+                $value = $maxLength ? substr($data[$key], 0, $maxLength) : $data[$key];
+                $this->setNestedValue($shippingAddress, $targetPath, $value);
+            }
+        }
+    
+        if ($this->customer->isLogged()) {
+            $this->load->model(self::ACCOUNT_CUSTOMER_MODEL_PATH);
+            $customerModel = $this->model_account_customer->getCustomer($this->customer->getId());
+            $shippingAddress['contact']['email'] = $customerModel['email'];
+        } else {
+            $orderId = (int)$this->session->data['order_id'];
+            $query = $this->db->query("SELECT * FROM `oc_order` WHERE `order_id` = $orderId");
+            $shippingAddress['contact']['email'] = $query->row['email'] ?? '';
+        }
+    
         return $shippingAddress;
     }
-
+    
+    protected function setNestedValue(array &$array, string $path, $value) {
+        $keys = explode('.', $path);
+        $ref = &$array;
+        foreach ($keys as $key) {
+            if (!isset($ref[$key]) || !is_array($ref[$key])) {
+                $ref[$key] = [];
+            }
+            $ref = &$ref[$key];
+        }
+        $ref = $value;
+    }
+    
     /**
      * @return array
      */
-    protected function getCustomer(){
+    protected function getCustomer() {
        if ($this->customer->isLogged()) {
-            $this->load->model('account/customer');
+            $this->load->model(self::ACCOUNT_CUSTOMER_MODEL_PATH);
             $customerModel = $this->model_account_customer->getCustomer($this->customer->getId());
             $customerData['firstName'] = substr($customerModel['firstname'], 0, 50);
             $customerData['lastName'] = substr($customerModel['lastname'], 0, 50);
             $customerData['email'] = $customerModel['email'];
-       } else{
-            $order_id = $this->session->data['order_id'];
-            $query = $this->db->query("SELECT * FROM `oc_order` WHERE `order_id` = $order_id");
+       } else {
+            $orderId = $this->session->data['order_id'];
+            $query = $this->db->query("SELECT * FROM `oc_order` WHERE `order_id` = $orderId");
             $shippingData = $query->row;
             $customerData['firstName'] = substr($shippingData['firstname'], 0, 50);
             $customerData['lastName'] = substr($shippingData['lastname'], 0, 50);
@@ -472,48 +595,90 @@ class Mastercard extends \Opencart\System\Engine\Controller{
     /**
      * Process Hosted Checkout Payment Method
      */
-    public function processHostedCheckout(){
+    public function processHostedCheckout() {
         setcookie("OCSESSID", "", time() - 1, "/");
-        $this->load->language('extension/mastercard/payment/mastercard');
-        $this->load->model('extension/mastercard/payment/mastercard');
+        $this->load->language(self::MASTER_CARD_MODEL_PATH);
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
         $this->document->addScript('view/javascript/mastercard/custom.js');
+        
         $requestIndicator = $this->request->get['resultIndicator'];
-        $mgpsSuccessIndicator =  $_COOKIE['mgps_sucesss_indicator'];;
-        if (isset($_COOKIE['mgps_order']) && isset($_COOKIE['mgps_sucesss_indicator'])) {
-            $mgpsSuccessIndicator = $_COOKIE['mgps_sucesss_indicator'];
-            $orderId = $_COOKIE['mgps_order'];
-            $ocessid = $_COOKIE['mgps_OCSESSID'];
-            $ocOrderId = $_COOKIE['order_id'];
-            $this->session->data['mgps_order_id']  = $orderId;
-            $this->session->data['order_id']  =  $ocOrderId;
+        $mgpsSuccessIndicator = $this->request->cookie['mgps_sucesss_indicator'] ?? '';
+    
+        if (isset($this->request->cookie['mgps_order']) &&
+        isset($this->request->cookie['mgps_sucesss_indicator'])) {
+            $mgpsSuccessIndicator = $this->request->cookie['mgps_sucesss_indicator'];
+            $orderId = $this->request->cookie['mgps_order'];
+            $ocessid = $this->request->cookie['mgps_OCSESSID'];
+            $ocOrderId = $this->request->cookie['order_id'];
+            $this->session->data['mgps_order_id'] = $orderId;
+            $this->session->data['order_id'] = $ocOrderId;
             setcookie('OCSESSID', $ocessid, time() + 24 * 3600, '/');
             setcookie('mgps_order', '', time() - 3600, '/');
             setcookie('mgps_sucesss_indicator', '', time() - 3600, '/');
         }
+        
         try {
             if ($mgpsSuccessIndicator !== $requestIndicator) {
-                throw new \Exception($this->language->get('error_indicator_mismatch'));
+                throw new \MasterCardPaymentException($this->language->get('error_indicator_mismatch'));
             }
+            
             $retrievedOrder = $this->retrieveOrder($orderId);
+            $voidtxnId = '';
+            foreach ($retrievedOrder['transaction'] as $txn) {
+                if ($txn['transaction']['type'] === 'AUTHORIZATION' && $txn['result'] == 'SUCCESS') {
+                    $voidtxnId = $txn['transaction']['id'];
+                }
+            }
+            
             if ($retrievedOrder['result'] !== 'SUCCESS') {
-                throw new \Exception($this->language->get('error_payment_declined'));
+                throw new \MasterCardPaymentException($this->language->get('error_payment_declined'));
             }
-            $txn = $retrievedOrder['transaction'][0];
-            $transactionId = $txn['authentication']['3ds']['transactionId'] ?? $txn['transaction']['acquirer']['transactionId'] ?? $txn['transaction']['transactionId'] ?? $txn['transaction']['id'] ?? '';        
-            $transactionAmount    =  $txn['transaction']['amount'];
-            $transactionStatus    = $txn['order']['status'];
-            $transactionOrderID   = $txn['order']['id'];
-            $merchantName         = $txn['merchant'];
-            $merchantId           = $txn['transaction']['acquirer']['merchantId'];
-            $customer_email       = $txn['customer']['email'];
+            
+            $txns = $retrievedOrder['transaction'];
+            
+            if( $txns ) {
+				foreach ( $txns as $txn ) {
+					if ( isset( $txn['transaction']['authorizationCode'] ) ) {
+						$transaction['transaction']['authorizationCode'] = $txn['transaction']['authorizationCode'];
+					} elseif( 'PAYPAL' === $txn['transaction']['acquirer']['id'] ) {
+						$transaction['transaction']['id']        = $txn['transaction']['id'];
+						$transaction['transaction']['reference'] = $txn['transaction']['reference'];
+					} else {
+						$transaction['transaction']['id']        = $txn['transaction']['id'];
+						$transaction['transaction']['reference'] = $txn['transaction']['reference'];
+					}
+				}
+			}
+            $transactionId = $transaction['transaction']['id'];
+            $transactionAmount = $txn['transaction']['amount'];
+            $transactionStatus = $txn['order']['status'];
+            $transactionOrderID = $txn['order']['id'];
+            $merchantName = $txn['merchant'];
+            $merchantId = $txn['transaction']['acquirer']['merchantId'];
+            $customerEmail = $txn['customer']['email'];
             $firstName = $txn['customer']['firstName'] ?? $retrievedOrder['shipping']['contact']['firstName'] ?? '';
-            $lastName  = $txn['customer']['lastName'] ?? $retrievedOrder['shipping']['contact']['lastName'] ?? '';
-            $customer_name = trim($firstName . ' ' . $lastName);
-            $this->processOrder($retrievedOrder, $txn);
-            $this->db->query("INSERT INTO ".DB_PREFIX."mgps_order_transaction SET order_id ='".$this->session->data['order_id'] ."', oc_order_id ='".$transactionOrderID ."', transaction_id = '".$transactionId."', type = '".$transactionStatus."', merchant_name = '".$merchantName."', merchant_id = '".$merchantId."' ,status = '".$transactionStatus ."', amount = '".$transactionAmount."', date_added = NOW()");
+            $lastName = $txn['customer']['lastName'] ?? $retrievedOrder['shipping']['contact']['lastName'] ?? '';
+            $customerName = trim($firstName . ' ' . $lastName);
+            
+            $this->processOrder($retrievedOrder,$txn,$transactionId);
+            $this->db->query(
+                "INSERT INTO " . DB_PREFIX . "mgps_order_transaction
+                SET order_id = '" . $this->session->data['order_id'] . "',
+                    oc_order_id = '" . $transactionOrderID . "',
+                    transaction_id = '" . $transactionId . "',
+                    void_transaction_id = '" . $voidtxnId . "',
+                    type = '" . $transactionStatus . "',
+                    merchant_name = '" . $merchantName . "',
+                    merchant_id = '" . $merchantId . "',
+                    status = '" . $transactionStatus . "',
+                    amount = '" . $transactionAmount . "',
+                    date_added = NOW()"
+            );
+            
             if ($this->config->get('config_mail_engine')) {
-               $this->sendCustomEmail($orderId, $customer_email,$transactionStatus, $customer_name );
+                $this->sendCustomEmail($orderId, $customerEmail, $transactionStatus, $customerName);
             }
+            
             $this->cart->clear();
             $this->clearTokenSaveCardSessionData();
             $this->model_extension_mastercard_payment_mastercard->clearCheckoutSession();
@@ -521,209 +686,59 @@ class Mastercard extends \Opencart\System\Engine\Controller{
                 sessionStorage.clear();
                 window.location.href = '" . $this->url->link('checkout/success', '', true) . "';
             </script>";
-            exit;
+            
         } catch (\Exception $e) {
-           
             $this->session->data['error'] = $e->getMessage();
             $this->addOrderHistory($orderId, self::ORDER_FAILED, $e->getMessage());
             $this->response->redirect($this->url->link('checkout/checkout', '', true));
         }
     }
+    
 
-    private function sendCustomEmail($orderId, $reciever_address, $subject, $customer_name) {
+    private function sendCustomEmail($orderId, $recieverAddress, $subject, $customerName) {
         $data['order_id'] = $orderId;
-        $data['receiver_address'] = $reciever_address;
+        $data['receiver_address'] = $recieverAddress;
         $data['order_status'] = $subject;
-        $data['customer_name'] = $customer_name;
+        $data['customer_name'] = $customerName;
     
         if ($this->config->get('config_mail_engine')) {
-            $mail_option = [
+            $mailOption = [
                 'parameter'     => $this->config->get('config_mail_parameter'),
                 'smtp_hostname' => $this->config->get('config_mail_smtp_hostname'),
                 'smtp_username' => $this->config->get('config_mail_smtp_username'),
-                'smtp_password' => html_entity_decode($this->config->get('config_mail_smtp_password'), ENT_QUOTES, 'UTF-8'),
+                'smtp_password' => html_entity_decode(
+                    $this->config->get('config_mail_smtp_password'),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ),
                 'smtp_port'     => $this->config->get('config_mail_smtp_port'),
                 'smtp_timeout'  => $this->config->get('config_mail_smtp_timeout')
             ];
-    
-            $mail = new \Opencart\System\Library\Mail($this->config->get('config_mail_engine'), $mail_option);
-            $mail->setTo($reciever_address);
+            $mail = new \Opencart\System\Library\Mail($this->config->get('config_mail_engine'), $mailOption);
+            $mail->setTo($recieverAddress);
             $mail->setFrom($this->config->get('config_email'));
             $mail->setSender($this->config->get('config_name'));
-    
-            // Use sprintf to combine the strings
-            $mail->setSubject(html_entity_decode(sprintf("Payment %s", ucwords(strtolower(str_replace('_', ' ', $subject)))), ENT_QUOTES, 'UTF-8'));
-    
+            $mail->setSubject(
+                html_entity_decode(
+                    sprintf(
+                        "Payment %s",
+                        ucwords(strtolower(str_replace('_', ' ', $subject)))
+                    ),
+                    ENT_QUOTES,
+                    'UTF-8'
+                )
+            );
             $mail->setHtml($this->load->view('extension/mastercard/payment/mgps_hosted_authorize_mail', $data));
             $mail->send();
         }
     }
     
-
-    public function callback(){
-        $this->load->language('extension/mastercard/payment/mastercard');
-        $this->load->model('extension/mastercard/payment/mastercard');
-        $requestHeaders = $this->request->server;
-        $webhookSecret = isset($requestHeaders[self::HEADER_WEBHOOK_SECRET]) ? $requestHeaders[self::HEADER_WEBHOOK_SECRET] : null;
-        $webhookAttempt = isset($requestHeaders[self::HEADER_WEBHOOK_ATTEMPT]) ? $requestHeaders[self::HEADER_WEBHOOK_ATTEMPT] : null;
-        $webhookId = isset($requestHeaders[self::HEADER_WEBHOOK_ID]) ? $requestHeaders[self::HEADER_WEBHOOK_ID] : null;
-        $content = file_get_contents('php://input');
-        $content = trim($content);
-        $parsedData = @json_decode($content, true);
-        $jsonError = json_last_error();
-        if ($jsonError !== JSON_ERROR_NONE) {
-            $this->model_extension_mastercard_payment_mastercard->log('Could not parse response JSON, error: '. $jsonError, json_encode(['rawContent' => $content]));
-            header('HTTP/1.1 500 ' . $jsonError);
-            exit;
-        }
-        try {
-            if ($requestHeaders['REQUEST_METHOD'] != 'POST') {
-                throw new \Exception($this->language->get('error_request_method'));
-            }
-
-            if (!$this->isSecure($requestHeaders)) {
-                throw new \Exception($this->language->get('error_insecure_connection'));
-            }
-
-            if ($this->model_extension_mastercard_payment_mastercard->getWebhookSecret() !== $webhookSecret) {
-                throw new \Exception($this->language->get('error_secret_mismatch'));
-            }
-
-            if ($this->model_extension_mastercard_payment_mastercard->getMerchantId() !== $parsedData['merchant']) {
-                throw new \Exception($this->language->get('error_merchant_mismatch'));
-            }
-
-            if (!isset($parsedData['order']) || !isset($parsedData['order']['id'])) {
-                throw new \Exception($this->language->get('error_invalid_order'));
-            }
-
-            if (!isset($parsedData['transaction']) || !isset($parsedData['transaction']['id'])) {
-                throw new \Exception($this->language->get('error_invalid_transaction'));
-            }
-
-        } catch (\Exception $e) {
-            $errorMessage = sprintf("WebHook Exception: '%s'", $e->getMessage());
-            $this->model_extension_mastercard_payment_mastercard->log($errorMessage);
-            header('HTTP/1.1 500 ' . $e->getMessage());
-            exit;
-        }
-
-        $webhookResponse = json_encode([
-            'notification_id' => $webhookId,
-            'notification_attempt' => $webhookAttempt,
-            'order.id' => $parsedData['order']['id'],
-            'transaction.id' => $parsedData['transaction']['id'],
-            'transaction.type' => $parsedData['transaction']['type'],
-            'response.gatewayCode' => $parsedData['response']['gatewayCode']
-        ]);
-        $this->model_extension_mastercard_payment_mastercard->log("Webhook Response: " . $webhookResponse);
-        try {
-            $response = $this->retrieveTransaction($parsedData['order']['id'], $parsedData['transaction']['id']);
-
-            if (isset($response['result']) && $response['result'] == 'ERROR') {
-                $error = $this->language->get('error_payment_declined');
-                if (isset($response['error']['explanation'])) {
-                    $error = sprintf('%s: %s', $response['error']['cause'], $response['error']['explanation']);
-                }
-                throw new \Exception($error);
-            }
-        } catch (\Exception $e) {
-            $this->model_extension_mastercard_payment_mastercard->log("Gateway Error: {$e->getMessage()}");
-            header("HTTP/1.1 500 Gateway Error");
-            exit;
-        }
-
-        if (!$this->isApproved($response)) {
-            $this->model_extension_mastercard_payment_mastercard->log(sprintf('Unexpected gateway code "%s"', $response['response']['gatewayCode']));
-            exit;
-        }
-
-        $mpgsOrderId = $response['order']['id'];
-        $prefix = trim($this->config->get('payment_mastercard_order_id_prefix'));
-        if ($prefix) {
-            $mpgsOrderId = substr($mpgsOrderId, strlen($prefix));
-        }
-
-        $this->load->model('checkout/order');
-        $order = $this->model_checkout_order->getOrder($mpgsOrderId);
-
-        if (isset($response['risk']['response'])) {
-            $risk = $response['risk']['response'];
-            switch ($risk['gatewayCode']) {
-                case 'REVIEW_REQUIRED':
-                    if (!empty($risk['review']['decision']) && in_array($risk['review']['decision'], ['NOT_REQUIRED', 'ACCEPTED'])) {
-                        $this->setOrderHistoryTransactionType($order, $response);
-                    }
-                    break;
-                default:
-                    $this->setOrderHistoryTransactionType($order, $response);
-                    break;
-            }
-
-            $this->model_extension_mastercard_payment_mastercard->log('webhook completed (200 OK)');
-            exit;
-        }
-    }
-
-    /**
-     * @param $order
-     * @param $response
-     */
-    protected function setOrderHistoryTransactionType($order, $response){
-        switch ($response['transaction']['type']) {
-            case 'AUTHORIZATION':
-            case 'AUTHORIZATION_UPDATE':
-                if ($order['order_status_id'] != $this->config->get('payment_mastercard_pending_status_id')) {
-                    $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_authorization'), $order['order_status_id']));
-                }
-                break;
-
-            case 'PAYMENT':
-            case 'CAPTURE':
-                if ($order['order_status_id'] != $this->config->get('payment_mastercard_approved_status_id') && $order['order_status_id'] != $this->config->get('payment_mastercard_pending_status_id')) {
-                    $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_capture'), $order['order_status']));
-                }
-                break;
-
-            case 'REFUND_REQUEST':
-            case 'REFUND':
-                if ($order['order_status_id'] != self::ORDER_CAPTURED) {
-                    $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_refund'), $order['order_status']));
-                } else {
-                    $order['order_status'] = self::ORDER_REFUNDED;
-                }
-                break;
-
-            case 'VOID_AUTHORIZATION':
-            case 'VOID_CAPTURE':
-            case 'VOID_PAYMENT':
-            case 'VOID_REFUND':
-                if ($order['order_status_id'] != $this->config->get('payment_mastercard_approved_status_id')) {
-                    $this->model_extension_mastercard_payment_mastercard->log(sprintf($this->language->get('text_not_allow_void'), $order['order_status']));
-                } else {
-                    $order['order_status'] = self::ORDER_VOIDED;
-                }
-                break;
-
-            case 'CANCELLED':
-                if ($order['order_status_id'] != self::ORDER_CANCELLED) {
-                    $order['order_status'] = self::ORDER_CANCELLED;
-                }
-                break;
-
-            default:
-                $order['order_status'] = self::ORDER_CANCELLED;
-                break;
-        }
-    }
-
     /**
      * @param $response
      * @return bool
      */
-    public function isApproved($response){
+    public function isApproved($response) {
         $gatewayCode = $response['response']['gatewayCode'];
-
         if (!in_array($gatewayCode, array('APPROVED', 'APPROVED_AUTO'))) {
             return false;
         }
@@ -735,7 +750,7 @@ class Mastercard extends \Opencart\System\Engine\Controller{
      * @param $headers
      * @return bool
      */
-    protected function isSecure($headers){
+    protected function isSecure($headers) {
         $https = $headers['HTTPS'];
         $serverPort = $headers['SERVER_PORT'];
         return (!empty($https) && $https === "1") || $serverPort === "443";
@@ -745,30 +760,37 @@ class Mastercard extends \Opencart\System\Engine\Controller{
      * @param $customerId
      * @return array
      */
-    public function getTokenizeCards($customerId){
-        $this->load->language('extension/mastercard/payment/mastercard');
-        $this->load->model('extension/mastercard/payment/mastercard');
-
+    public function getTokenizeCards($customerId) {
+        $this->load->language(self::MASTER_CARD_MODEL_PATH);
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
         $customerTokens = $this->model_extension_mastercard_payment_mastercard->getCustomerTokens($customerId);
         $uri = $this->model_extension_mastercard_payment_mastercard->getApiUri() . '/token/';
-
         $cards = [];
-
         foreach ($customerTokens as $token) {
-            $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('GET', $uri . urlencode($token['token']));
-
+            $requestUri = $uri . urlencode($token['token']);
+            $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('GET', $requestUri);
             if ($response['result'] !== 'SUCCESS' || $response['status'] !== 'VALID') {
-                $this->db->query("DELETE FROM `" . DB_PREFIX . "mpgs_hpf_token` WHERE hpf_token_id='" . (int)$token['hpf_token_id'] . "'");
+                $query = "DELETE FROM `" . DB_PREFIX . "mpgs_hpf_token`
+                    WHERE hpf_token_id='" . (int)$token['hpf_token_id'] . "'";
+                $this->db->query($query);
             } else {
                 $expiry = [];
                 $cardNumber = substr($response['sourceOfFunds']['provided']['card']['number'], - 4);
                 preg_match( '/^(\d{2})(\d{2})$/', $response['sourceOfFunds']['provided']['card']['expiry'], $expiry);
-
                 $cards[] = [
-                    'id' => (int)$token['hpf_token_id'],
-                    'type' => sprintf($this->language->get('text_card_type'), ucfirst(strtolower($response['sourceOfFunds']['provided']['card']['brand']))),
-                    'label' => sprintf($this->language->get('text_card_label'), $cardNumber),
-                    'expiry' => sprintf($this->language->get('text_card_expiry'), $expiry[1] . '/' . $expiry[2])
+                    'id'    => (int) $token['hpf_token_id'],
+                    'type'  => sprintf(
+                        $this->language->get('text_card_type'),
+                        ucfirst(strtolower($response['sourceOfFunds']['provided']['card']['brand']))
+                    ),
+                    'label' => sprintf(
+                        $this->language->get('text_card_label'),
+                        $cardNumber
+                    ),
+                    'expiry' => sprintf(
+                        $this->language->get('text_card_expiry'),
+                        $expiry[1] . '/' . $expiry[2]
+                    ),
                 ];
             }
         }
@@ -777,16 +799,17 @@ class Mastercard extends \Opencart\System\Engine\Controller{
     }
 
     protected function getTokenById($tokenId) {
-        $tokensResult = $this->db->query("SELECT token FROM `" . DB_PREFIX . "mpgs_hpf_token` WHERE hpf_token_id='" . (int)$tokenId . "'");
+        $sql  = "SELECT token FROM `" . DB_PREFIX . "mpgs_hpf_token` ";
+        $sql .= "WHERE hpf_token_id = '" . (int)$tokenId . "'";
+        $tokensResult = $this->db->query($sql);
         return $tokensResult->row;
     }
-
     
     /**
      * Clear values of Hosted Payment Form
      * fields from session
      */
-    protected function clearTokenSaveCardSessionData(){
+    protected function clearTokenSaveCardSessionData() {
         unset($this->session->data['save_card']);
         unset($this->session->data['token_id']);
         unset($this->session->data['source_of_funds']);
@@ -796,15 +819,15 @@ class Mastercard extends \Opencart\System\Engine\Controller{
     /**
      * Cancel callback
      */
-    public function cancelCallback(){
-        $ocessid = $_COOKIE['mgps_OCSESSID'];
+    public function cancelCallback() {
+        $ocessid = $this->request->cookie['mgps_OCSESSID'] ?? '';
         setcookie('OCSESSID', $ocessid, time() + 24 * 3600, '/');
     }
-
+    
     /**
      * Cancel callback
      */
-    public function errorCallback(){
+    public function errorCallback() {
         $this->response->redirect($this->url->link('checkout/cart', '', true));
     }
 
@@ -813,79 +836,129 @@ class Mastercard extends \Opencart\System\Engine\Controller{
      * @param $txn
      * @throws Exception
      */
-    protected function processOrder($retrievedOrder, $txn){
-        if ($retrievedOrder['status'] === 'CAPTURED') {
-            $message = sprintf($this->language->get('text_payment_captured'), $txn['transaction']['id'], isset($txn['transaction']['authorizationCode']) ? $txn['transaction']['authorizationCode'] : '');
-            $orderStatusId = self::ORDER_CAPTURED;
-        } elseif ($retrievedOrder['status'] === 'AUTHORIZED') {
-            $message = sprintf($this->language->get('text_payment_authorized'), $txn['transaction']['id'], isset($txn['transaction']['authorizationCode']) ? $txn['transaction']['authorizationCode'] : '');
+    protected function processOrder($retrievedOrder, $txn ,$transactionId) {
+        $status = strtoupper(trim($retrievedOrder['status']));
+        $firstKey = array_key_first($txn);
+        $authCode = isset($txn['transaction']['authorizationCode']) ? $txn['transaction']['authorizationCode'] : '';
+        if ($status === 'CAPTURED') {
+            if ($authCode !== '') {
+                $message = sprintf($this->language->get('text_payment_captured'), $transactionId, $authCode);
+            } else {
+                $message = sprintf($this->language->get('text_payment_captured_no_auth'), $transactionId);
+            }
             $orderStatusId = $this->config->get('payment_mastercard_approved_status_id');
+        } elseif ($status === 'AUTHORIZED') {
+            if ($authCode !== '') {
+                $message = sprintf($this->language->get('text_payment_authorized'), $transactionId, $authCode);
+            } else {
+                $message = sprintf($this->language->get('text_payment_authorized_no_auth'), $transactionId);
+            }
+            $orderStatusId = $this->config->get('payment_mastercard_pending_status_id');
         } else {
-            throw new Exception($this->language->get('error_transaction_unsuccessful'));
+            throw new MasterCardPaymentException(
+                $this->language->get('error_transaction_unsuccessful')
+            );
+        }
+    
+        $isPayPal = isset($retrievedOrder['sourceOfFunds']['type']) && strtoupper($retrievedOrder['sourceOfFunds']['type']) === 'PAYPAL';
+    
+        $order_id = (int)$this->session->data['order_id'];
+
+        if ($isPayPal) {
+            // Check if an order_history record exists
+            $query = $this->db->query("
+                SELECT `order_history_id` 
+                FROM `" . DB_PREFIX . "order_history`
+                WHERE `order_id` = '" . $order_id . "'
+                ORDER BY `date_added` DESC
+                LIMIT 1
+            ");
+
+            if ($query->num_rows) {
+                // Update the most recent order_history record
+                $order_history_id = (int)$query->row['order_history_id'];
+
+                $this->db->query("
+                    UPDATE `" . DB_PREFIX . "order_history`
+                    SET 
+                        `order_status_id` = '" . (int)$orderStatusId . "',
+                        `comment` = '" . $this->db->escape($message) . "'
+                    WHERE `order_history_id` = '" . $order_history_id . "'
+                ");
+            } else {
+                // No history exists, insert a new one
+                $this->addOrderHistory($order_id, $orderStatusId, $message);
+            }
+
+            // Always update the order status in the main `order` table
+            $this->db->query("
+                UPDATE `" . DB_PREFIX . "order` 
+                SET `order_status_id` = '" . (int)$orderStatusId . "' 
+                WHERE `order_id` = '" . $order_id . "'
+            ");
+        } else {
+            $this->addOrderHistory($order_id, $orderStatusId, $message);
         }
 
-      
-        $this->addOrderHistory($this->session->data['order_id'], $orderStatusId, $message);
     }
-
+    
+    
     /**
      * @param $orderId
      * @param $orderStatusId
      * @param $message
      */
-    protected function addOrderHistory($orderId, $orderStatusId, $message){
+    protected function addOrderHistory($orderId, $orderStatusId, $message) {
         $this->load->model('checkout/order');
-        $this->model_checkout_order->addHistory($orderId, $orderStatusId , $message);
+        $this->model_checkout_order->addHistory($orderId, $orderStatusId, $message);
     }
 
     /**
      * @param $orderId
      * @return mixed
      */
-    protected function retrieveOrder($orderId){
-        
-        $this->load->model('extension/mastercard/payment/mastercard');
-
-        $uri = $this->model_extension_mastercard_payment_mastercard->getApiUri() . '/order/' . $orderId;
-
-        $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('GET', $uri);
-        
-        return $response;
+    protected function retrieveOrder($orderId) {
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
+        $apiUri = $this->model_extension_mastercard_payment_mastercard->getApiUri();
+        $uri = $apiUri . '/order/' . $orderId;
+        return $this->model_extension_mastercard_payment_mastercard->apiRequest('GET', $uri);
     }
+    
 
     /**
      * @param $orderId
      * @param $txnId
      * @return mixed
      */
-    protected function retrieveTransaction($orderId, $txnId){
-        $this->load->model('extension/mastercard/payment/mastercard');
-        $uri = $this->model_extension_mastercard_payment_mastercard->getApiUri() . '/order/' . $orderId . '/transaction/' . $txnId;
-        $response = $this->model_extension_mastercard_payment_mastercard->apiRequest('GET', $uri);
-        return $response;
+    protected function retrieveTransaction($orderId, $txnId) {
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
+        return $this->model_extension_mastercard_payment_mastercard->apiRequest(
+            'GET',
+            $this->model_extension_mastercard_payment_mastercard->getApiUri()
+            . '/order/' . $orderId . '/transaction/' . $txnId
+        );
     }
-
+    
     /**
      * @return array
      */
-    public function configureHostedCheckout(){
+    public function configureHostedCheckout() {
         $this->load->helper('utf8');
-        $this->load->model('extension/mastercard/payment/mastercard');
-        $params = [
+        $this->load->model(self::MASTER_CARD_MODEL_PATH);
+        return [
             'merchant' => $this->model_extension_mastercard_payment_mastercard->getMerchantId(),
             'session' => [
                 'id' => $this->session->data['mpgs_hosted_checkout']['session']['id'],
                 'version' => $this->session->data['mpgs_hosted_checkout']['session']['version']
             ]
         ];
-        return $params; 
     }
 
     /**
      * @param $orderId
      * @return string
      */
-    protected function getOrderPrefix($orderId){
+    protected function getOrderPrefix($orderId) {
         $prefix = trim($this->config->get('payment_mastercard_order_id_prefix'));
         if (!empty($prefix)) {
             $orderId = $prefix . $orderId;

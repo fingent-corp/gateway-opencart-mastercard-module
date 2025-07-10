@@ -16,7 +16,9 @@ With this gateway, you don’t have to handle or store customer card/account det
 
 ## Compatibility
 
-The latest version of the extension has been tested and is compatible only with OpenCart version 4.0.2.3.
+Plugin versions 1.3.x are developed and tested for compatibility with OpenCart version 4. The latest version, 1.3.3, has been tested and confirmed to work with OpenCart version 4.1.0.2.
+
+Note: Plugin version 1.2.0 has been tested for compatibility only with OpenCart version 3. The supported features in this version include: Card Payments, Capture Payments, Full Refunds, and Partial Refunds.
 
 ##  Mastercard Payment Module Features
 
@@ -47,6 +49,9 @@ AVS helps prevent fraud by checking the billing address provided during a paymen
 
    - **Capture Payments**<br/>
 This feature lets you manually process payments for authorized orders directly from your system. It gives you more control over how payments are handled.
+
+   - **Void Transaction**<br/>
+The void transaction feature lets you cancel an order before it’s invoiced or completed. This option is usually available for ‘Authorize’ transactions, where the funds are reserved but not yet charged or billed.
 
 - **Full Refunds**<br/>
 You can refund the entire amount of the transaction back to the customer's account. This is helpful when a complete order needs to be cancelled or returned. 

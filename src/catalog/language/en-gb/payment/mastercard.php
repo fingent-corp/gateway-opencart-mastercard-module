@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2023 Mastercard
+ * Copyright (c) 2019-2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * @package  Mastercard
+ * @version  GIT: @1.5.0@
+ * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 
 // Text
@@ -34,9 +38,9 @@ $_['text_webhook_refund_void']       = "Mastercard payment '%s' %s from gateway 
 $_['text_webhook_unknown']           = "Received unknown transaction.type '%s' by Webhook";
 $_['text_payment_captured']          = 'Mastercard payment CAPTURED (ID: %s, Auth Code: %s)';
 $_['text_payment_authorized']        = "Mastercard payment AUTHORIZED (ID: %s, Auth Code: %s)";
+$_['text_payment_authorized_no_auth'] = "Mastercard payment AUTHORIZED (ID: %s)";
 $_['text_payment_unknown']           = "Mastercard payment %s (ID: %s)";
-
-
+$_['text_payment_captured_no_auth']  = "Mastercard payment CAPTURED (ID: %s)";
 // Entry
 $_['entry_cc_number']                = 'Card number';
 $_['entry_expiry_month']             = 'Expiry (MM)';
@@ -62,3 +66,4 @@ $_['error_merchant_mismatch']        = 'Webhook merchant ID does not match with 
 $_['error_invalid_order']            = 'Invalid data received (order.id)';
 $_['error_invalid_transaction']      = 'Invalid data received (transaction.id)';
 $_['error_transaction_unsuccessful'] = 'Your transaction was unsuccessful, please check your details and try again.';
+

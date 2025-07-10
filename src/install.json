@@ -1,7 +1,8 @@
 {
-    "name": "Mastercard Payment Extension",
-    "version": "1.3.2",
-    "author": "Mastercard Payment Gateway Services Pvt Ltd.",
+    "name": "Mastercard Gateway Extension",
+    "description": "Enable secure and seamless payments on your store with the Mastercard Gateway extension.",
+    "version": "1.3.3",
+    "author": "Mastercard Gateway.",
     "link": "https://www.mastercard.com",
     "instruction": ""
   }
