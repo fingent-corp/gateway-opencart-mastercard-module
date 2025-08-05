@@ -638,11 +638,11 @@ class Mastercard extends \Opencart\System\Engine\Controller {
             
             if( $txns ) {
 				foreach ( $txns as $txn ) {
+                    if ($txn['transaction']['type'] !== 'AUTHORIZATION' && $txn['transaction']['type'] !== 'PAYMENT') {
+                        continue;
+                    }
 					if ( isset( $txn['transaction']['authorizationCode'] ) ) {
 						$transaction['transaction']['authorizationCode'] = $txn['transaction']['authorizationCode'];
-					} elseif( 'PAYPAL' === $txn['transaction']['acquirer']['id'] ) {
-						$transaction['transaction']['id']        = $txn['transaction']['id'];
-						$transaction['transaction']['reference'] = $txn['transaction']['reference'];
 					} else {
 						$transaction['transaction']['id']        = $txn['transaction']['id'];
 						$transaction['transaction']['reference'] = $txn['transaction']['reference'];
