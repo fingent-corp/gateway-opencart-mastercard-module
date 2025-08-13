@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  * @package  Mastercard
- * @version  GIT: @1.3.3@
+ * @version  GIT: @1.3.4@
  * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 
@@ -35,7 +35,7 @@ class MasterCard extends \Opencart\System\Engine\Controller {
         'currency_model'   => 'localisation/currency',
         'model_sale_order' => 'sale/order',
         'repo_name'        => 'gateway-opencart-mastercard-module',
-        'module_version'   => '1.3.3',
+        'module_version'   => '1.3.4',
         'api_version'      => '100',
         'api_version_path' => 'api/rest/version/',
         'transaction_error' => 'An error has been occurred during the transaction.',

@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  * @package  Mastercard
- * @version  GIT: @1.3.3@
+ * @version  GIT: @1.3.4@
  * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 
@@ -636,17 +636,21 @@ class Mastercard extends \Opencart\System\Engine\Controller {
             
             $txns = $retrievedOrder['transaction'];
             
+            $txns = $retrievedOrder['transaction'];
+            
             if( $txns ) {
 				foreach ( $txns as $txn ) {
-					if ( isset( $txn['transaction']['authorizationCode'] ) ) {
-						$transaction['transaction']['authorizationCode'] = $txn['transaction']['authorizationCode'];
-					} elseif( 'PAYPAL' === $txn['transaction']['acquirer']['id'] ) {
-						$transaction['transaction']['id']        = $txn['transaction']['id'];
-						$transaction['transaction']['reference'] = $txn['transaction']['reference'];
-					} else {
-						$transaction['transaction']['id']        = $txn['transaction']['id'];
-						$transaction['transaction']['reference'] = $txn['transaction']['reference'];
-					}
+                    if (isset($txn['transaction'])) {
+                        if (isset($txn['transaction']['id']) && !empty($txn['transaction']['id'])) {
+                            $transaction['transaction']['id'] = $txn['transaction']['id'];
+                        }
+
+                        if ( isset( $txn['transaction']['authorizationCode'] ) ) {
+                            $transaction['transaction']['authorizationCode'] = $txn['transaction']['authorizationCode'];
+                        } else {
+                            $transaction['transaction']['reference'] = $txn['transaction']['reference'];
+                        }
+                    }
 				}
 			}
             $transactionId = $transaction['transaction']['id'];
