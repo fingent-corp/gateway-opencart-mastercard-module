@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  * @package  Mastercard
- * @version  GIT: @1.3.3@
+ * @version  GIT: @1.3.4@
  * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 
@@ -28,10 +28,10 @@ class Mastercard extends \Opencart\System\Engine\Model {
     const API_ASIA = 'api_ap';
     const API_MTF = 'api_mtf';
     const API_OTHER = 'api_other';
-    const MODULE_VERSION = '1.3.3';
+    const MODULE_VERSION = '1.3.4';
     const API_VERSION = '100';
     const DEBUG_LOG_FILENAME = 'mpgs_gateway.log';
-    const THREEDS_API_VERSION = '1.3.3';
+    const THREEDS_API_VERSION = '1.3.4';
         
     /**
      * getMethods

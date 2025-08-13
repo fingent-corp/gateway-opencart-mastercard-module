@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  * @package  Mastercard
- * @version  GIT: @1.3.3@
+ * @version  GIT: @1.3.4@
  * @link     https://github.com/fingent-corp/gateway-opencart-mastercard-module
  */
 

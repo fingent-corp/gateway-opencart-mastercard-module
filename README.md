@@ -16,7 +16,7 @@ With this gateway, you don’t have to handle or store customer card/account det
 
 ## Compatibility
 
-Plugin versions 1.3.x are developed and tested for compatibility with OpenCart version 4. The latest version, 1.3.3, has been tested and confirmed to work with OpenCart version 4.1.0.2.
+Plugin versions 1.3.x are developed and tested for compatibility with OpenCart version 4. The latest version, 1.3.4, has been tested and confirmed to work with OpenCart version 4.1.0.3.
 
 Note: Plugin version 1.2.0 has been tested for compatibility only with OpenCart version 3. The supported features in this version include: Card Payments, Capture Payments, Full Refunds, and Partial Refunds.
 

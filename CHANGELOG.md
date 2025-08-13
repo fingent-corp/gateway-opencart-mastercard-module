@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.3.4] - 2025-13-08
+
+### Enhancements
+- Enhanced Compatibility: Now compatible with OpenCart version 4.1.0.x (tested only with v4.1.0.3).
+- Minor bug fixes.
+
 ## [1.3.3] - 2025-19-06
 
 ### Enhancements
