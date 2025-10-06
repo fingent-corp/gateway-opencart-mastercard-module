@@ -132,4 +132,17 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
     public function isTestModeEnabled(){
         return $this->config->get('payment_mpgs_hosted_checkout_test');
     }
+
+    public function getLanguages() {
+        return [
+            'en' => 'English',
+            'ar' => 'العربية (Arabic)',
+            'zh_HK' => '香港中文 (Hong Kong Chinese)',
+            'zh_TW' => '繁體中文 (Traditional Chinese)',
+            'zh_CN' => '繁體中文 (Simplified Chinese)',
+            'el' => 'Ελληνικά (Greek)',
+        ];
+    }
+    
+    
 }

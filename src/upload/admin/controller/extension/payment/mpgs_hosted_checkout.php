@@ -21,7 +21,7 @@
 class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 {
     const API_VERSION = '100';
-    const MODULE_VERSION = '1.2.0';
+    const MODULE_VERSION = '1.2.1';
     const API_AMERICA = 'api_na';
     const API_EUROPE = 'api_eu';
     const API_ASIA = 'api_ap';
@@ -40,7 +40,9 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $this->document->setTitle($this->language->get('heading_title'));
 
         $this->load->model('setting/setting');
-
+        
+        //$this->load->model('extension/payment/mpgs_languages');
+       
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
 
             $this->model_setting_setting->editSetting('payment_mpgs_hosted_checkout', $this->request->post);
@@ -207,6 +209,12 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
             $data['payment_mpgs_hosted_checkout_sort_order'] = $this->config->get('payment_mpgs_hosted_checkout_sort_order');
         }
 
+        if (isset($this->request->post['payment_mpgs_hosted_checkout_locale'])) {
+            $data['payment_mpgs_hosted_checkout_locale'] = $this->request->post['payment_mpgs_hosted_checkout_locale'];
+        } else {
+            $data['payment_mpgs_hosted_checkout_locale'] = $this->config->get('payment_mpgs_hosted_checkout_locale');
+        }
+
         if (isset($this->request->post['payment_mpgs_hosted_checkout_debug'])) {
             $data['payment_mpgs_hosted_checkout_debug'] = $this->request->post['payment_mpgs_hosted_checkout_debug'];
         } else {
@@ -223,6 +231,12 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
             $data['payment_mpgs_hosted_checkout_approved_status_id'] = $this->request->post['payment_mpgs_hosted_checkout_approved_status_id'];
         } else {
             $data['payment_mpgs_hosted_checkout_approved_status_id'] = $this->config->get('payment_mpgs_hosted_checkout_approved_status_id') ? : '2';
+        }
+
+        if (isset($this->request->post['payment_mpgs_hosted_checkout_refund_status_id'])) {
+            $data['payment_mpgs_hosted_checkout_refund_status_id'] = $this->request->post['payment_mpgs_hosted_checkout_refund_status_id'];
+        } else {
+            $data['payment_mpgs_hosted_checkout_refund_status_id'] = $this->config->get('payment_mpgs_hosted_checkout_refund_status_id') ? : '2';
         }
 
         if (isset($this->request->post['payment_mpgs_hosted_checkout_declined_status_id'])) {
@@ -256,6 +270,8 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
         $data['footer'] = $this->load->controller('common/footer');
+        $data['mpgs_languages'] = $this->model_extension_payment_mpgs_hosted_checkout->getLanguages();
+
 
       
 
@@ -324,7 +340,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $orderIDPrefix = $this->config->get('payment_mpgs_hosted_checkout_order_id_prefix');
         $processed_order_id = $orderIDPrefix . $this->request->get['order_id'];
         $order = $this->model_extension_payment_mpgs_hosted_checkout->getOrder($this->request->get['order_id']);
-        $order_info = $this->model_sale_order->getOrder($order);
+        $order_info = $this->model_sale_order->getOrder($this->request->get['order_id']);
         $currencies = $this->model_localisation_currency->getCurrencies();
         $defaultCurrencyCode = $this->config->get('config_currency');
         $currencyInfo = $this->model_localisation_currency->getCurrencyByCode($defaultCurrencyCode);
@@ -574,7 +590,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
                 }
             }
             $api_version = self::API_VERSION;
-            $completed_status_id = $this->model_extension_payment_mpgs_hosted_checkout->getOrderStatusIdByName("Complete");
+            $completed_status_id = $this->config->get('payment_mpgs_hosted_checkout_approved_status_id');
             $new_order_id = $this->extractOrderNumberFromString($capture_order_id);
             $newTxnId = $this->getUniqueTransactionId($capture_order_id);
             $url =  $this->getCaptureUri() . 'api/rest/version/' . self::API_VERSION . '/merchant/' . $merchant_id . '/order/' . $capture_order_id . '/transaction/' . $newTxnId ;
@@ -748,7 +764,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
             $comment = $this->language->get('text_refund_sucess');
             $merchant_id =$this->model_extension_payment_mpgs_hosted_checkout->getMerchantId();
             $api_version = self::API_VERSION;
-            $refund_status_id = $this->model_extension_payment_mpgs_hosted_checkout->getOrderStatusIdByName("Refunded");
+            $refund_status_id = $this->config->get('payment_mpgs_hosted_checkout_refund_status_id');
             $this->load->model('localisation/currency');
             $currencies = $this->model_localisation_currency->getCurrencies();
             $defaultCurrencyCode = $this->config->get('config_currency');
@@ -825,7 +841,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
             }
             $capture_amount  = $this->request->post['amount'];
             $api_version = self::API_VERSION;
-            $refund_status_id = $this->model_extension_payment_mpgs_hosted_checkout->getOrderStatusIdByName("Refunded");
+            $refund_status_id = $this->config->get('payment_mpgs_hosted_checkout_refund_status_id');
             $currencies = $this->model_localisation_currency->getCurrencies();
             $defaultCurrencyCode = $this->config->get('config_currency');
             $currencyInfo = $this->model_localisation_currency->getCurrencyByCode($defaultCurrencyCode);

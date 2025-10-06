@@ -1,6 +1,24 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2025-10-01
+### Bug Fixes
+- Fixed the result indicator mismatch issue for opencart version 3.
+
+## [1.3.4] - 2025-13-08
+
+### Enhancements
+- Enhanced Compatibility: Now compatible with OpenCart version 4.1.0.x (tested only with v4.1.0.3).
+- Minor bug fixes.
+
+## [1.3.3] - 2025-19-06
+
+### Enhancements
+- Enhanced Compatibility: Now compatible with OpenCart version 4.1.0.x (tested only with v4.1.0.2).
+- Added support for processing void transactions.
+- Updated the plugin configuration section for better usability.
+- Introduced a ‘Merchant Information’ section in plugin settings, allowing admins to update the merchant details to be displayed on the Redirected Payment Page easily.
+
 ## [1.3.2] - 2025-24-02
 ### Updated
 - Updated Mastercard API Version to 100.
@@ -22,9 +40,8 @@ All notable changes to this project will be documented in this file.
 
 ## [1.2.0] - 2025-09-05
 ### Updated
-- Compatible only with OpenCart version 3.
+- Compatible only with OpenCart version 3. The supported features in this version include: Card Payments, Capture Payments, Full Refunds, and Partial Refunds.
 - Support added for Mastercard API Version 100.
-
 
 
 

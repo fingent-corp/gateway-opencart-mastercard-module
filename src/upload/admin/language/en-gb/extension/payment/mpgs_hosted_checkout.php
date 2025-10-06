@@ -65,6 +65,7 @@ $_['help_test_notification_secret']  = 'Be sure to enable the WebHook support in
 $_['help_debug_mode']                = 'Debug logging only works with Sandbox mode. It will log all communication of Mastercard gateway into /storage/logs/mpgs_gateway.log file.';
 $_['help_order_id_prefix']           = 'Should be specified in case multiple integrations use the same Merchant ID';
 $_['help_send_line_items']           = 'Include line item details on gateway order';
+$_['help_locale']                    = 'By default, the Hosted Payment Page uses the payer’s browser language. To override this, specify a language. If the language is unsupported, the closest match will be used.';
 
 // Help
 $_['help_title']                     = 'This controls the title which the user sees during checkout.';
@@ -87,6 +88,7 @@ $_['entry_test_notification_secret'] = 'Test Notification Secret';
 $_['entry_api_gateway']              = 'Gateway Instance';
 $_['entry_test']					 = 'Test Mode';
 $_['entry_debug']					 = 'Debug';
+$_['entry_locale']					 = 'Language';
 $_['entry_initial_transaction']      = 'Initial Transaction';
 $_['entry_title']                    = 'Title';
 $_['entry_api_gateway_other']        = 'Custom Gateway URL';
@@ -98,6 +100,7 @@ $_['entry_saved_cards']              = 'Saved Cards';
 $_['entry_order_id_prefix']          = 'Order ID prefix';
 $_['entry_approved_status']          = 'Approved Status';
 $_['entry_declined_status']          = 'Declined Status';
+$_['entry_refund_status']            = 'Refund Status';
 $_['entry_pending_status']           = 'Pending Status';
 $_['entry_risk_review_status']       = 'Risk review required Status';
 $_['entry_risk_declined_status']     = 'Declined by Risk Assessment';

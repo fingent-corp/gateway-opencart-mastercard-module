@@ -77,19 +77,40 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
                     $data['version'] = isset($checkout_session_id->session->version) ? $checkout_session_id->session->version : null;
                     $data['mgps_order_id'] = $this->getOrderPrefix($this->session->data['order_id']);
                     $data['order_id'] = $this->session->data['order_id'];
-    
+        
                     if (isset($this->session->data['mpgs_hosted_checkout']['successIndicator'])) {
                         $data['success_indicator'] = $this->session->data['mpgs_hosted_checkout']['successIndicator'];
+                        $key = 'mpgs_success_indicator_' . (int)$data['order_id'];
+                        $value = $key . $data['success_indicator'];
+                       
+                        // First REPLACE INTO
+                            $this->db->query("REPLACE INTO `" . DB_PREFIX . "setting` SET 
+                            `store_id` = '0',
+                            `code` = 'mpgs',
+                            `key` = '" . $this->db->escape($key) . "',
+                            `value` = '" . $this->db->escape($value) . "',
+                            `serialized` = 0");
+
+                            // Then UPDATE to ensure it always has the latest value (optional if REPLACE suffices)
+                            $this->db->query("UPDATE `" . DB_PREFIX . "setting` SET 
+                            `value` = '" . $this->db->escape($value) . "',
+                            `serialized` = 0 
+                            WHERE `store_id` = 0 AND `code` = 'mpgs' AND `key` = '" . $this->db->escape($key) . "'");
+
                     }
-    
+        
                     $data['OCSESSID'] = $_COOKIE['OCSESSID'];
                     $jsonData = json_encode($data);
                     $data['jsonData'] = $jsonData;
                     setcookie('OCSESSID', $data['OCSESSID'], time() + 24 * 3600, '/');
+                    $query = $this->db->query("SELECT `value` FROM `" . DB_PREFIX . "setting` WHERE `key` = '" . $key . "' AND `code` = 'mpgs'");
+                    $storedIndicator = $query->num_rows ? $query->row['value'] : null;    
+                    
                     return $this->load->view('extension/payment/mpgs_hosted_checkout_template', $data);
                 }
             }
         }
+        
     }
 
     /**
@@ -154,8 +175,6 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 
         $uri = $this->model_extension_payment_mpgs_hosted_checkout->getApiUri() . '/session';
         $response = $this->model_extension_payment_mpgs_hosted_checkout->apiRequest('POST', $uri, $requestData);
-
-
         if (!empty($response['result']) && $response['result'] === 'SUCCESS') {
            
             if ($this->model_extension_payment_mpgs_hosted_checkout->getIntegrationModel() === 'hostedcheckout') {
@@ -179,13 +198,22 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
     protected function getInteraction()
     {
         $this->load->model('extension/payment/mpgs_hosted_checkout');
-
-        $integration['merchant']['name'] = $this->config->get('config_name');
+        $default_language = $this->config->get('config_language');
+        $plugin_locale = $this->config->get('payment_mpgs_hosted_checkout_locale');
+        if (!empty($plugin_locale) && $plugin_locale !== $default_language) {
+            $checkout_locale = $plugin_locale;
+        } else {
+            $checkout_locale = $default_language;
+        }
+        $name = $this->config->get('config_name');
+        $integration['merchant']['name'] = (strlen($name) > 40) ? substr($name, 0, 40) : $name;
         $integration['operation'] = $this->model_extension_payment_mpgs_hosted_checkout->getPaymentAction();
         $integration['returnUrl'] = $this->url->link('extension/payment/mpgs_hosted_checkout/processHostedCheckout', '', true);
         $integration['displayControl']['shipping'] = 'HIDE';
         $integration['displayControl']['billingAddress'] = 'HIDE';
         $integration['displayControl']['customerEmail'] = 'HIDE';
+        $integration['locale'] =  $checkout_locale ?: 'en';
+
 
         return $integration;
     }
@@ -199,8 +227,22 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $orderData['id'] = $orderId;
         $orderData['reference'] = $orderId;
         $orderData['currency'] = $this->session->data['currency'];
-        $orderData['description'] = 'Ordered goods';
         $orderData['notificationUrl'] = $this->url->link('extension/payment/mpgs_hosted_checkout/callback', '', true);
+        $lang = $this->model_extension_payment_mpgs_hosted_checkout->getConfiguredLanguage();
+        $translations = [
+            'en'    => 'Ordered goods',
+            'ar'    => 'البضائع المطلوبة',
+            'zh_HK' => '已訂購商品',
+            'zh_TW' => '已訂購商品',
+            'zh_CN' => '已订购商品',
+            'el'    => 'Παραγγελθέντα αγαθά',
+        ];
+        if (!empty($lang) && isset($translations[$lang])) {
+            $orderData['description'] = $translations[$lang];
+        } else {
+            $orderData['description'] = 'Ordered goods';
+        }
+
 
         return $orderData;
     }
@@ -302,7 +344,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
             'tax'
         ];
 
-        $formattedTotal = round($total, 2);
+        $formattedTotal = number_format($total, 2, '.', '');
         $subTotal = 0;
         $tax = 0;
         $taxInfo = [];
@@ -329,6 +371,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         }
 
         $finalTotal = $subTotal + $tax + $shipping;
+
         if ($finalTotal == $formattedTotal) {
             $this->orderAmount = $formattedTotal;
             $orderData['amount'] = $formattedTotal;
@@ -337,12 +380,22 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
                 $orderData['shippingAndHandlingAmount'] = $shipping;
                 $orderData['taxAmount'] = $tax;
             }
+        } else{
+            $this->orderAmount = $formattedTotal;
+            $orderData['amount'] = $formattedTotal;
+            if ($sendLineItems) {
+                $orderData['itemAmount'] = $subTotal;
+                $orderData['shippingAndHandlingAmount'] = $shipping;
+                $orderData['taxAmount'] = $tax;
+            }
+
         }
 
         /** Order Tax Details */
         if (!empty($taxInfo) && $sendLineItems) {
             $orderData['tax'] = $taxInfo;
         }
+
 
         return $orderData;
     }
@@ -436,14 +489,23 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 
                 $customerModel = $this->model_account_customer->getCustomer($this->customer->getId());
 
-                $shippingAddress['contact']['email'] = $customerModel['email'];
-                $shippingAddress['contact']['phone'] = utf8_substr($customerModel['telephone'], 0, 20);
+                if (!empty($customerModel['email'])) {
+                    $shippingAddress['contact']['email'] = $customerModel['email'];
+                }
+
+                if (!empty($customerModel['telephone'])) {
+                    $shippingAddress['contact']['phone'] = utf8_substr($customerModel['telephone'], 0, 20);
+                }
 
             } else {
                 $guestUser = $this->session->data['guest'];
 
-                $shippingAddress['contact']['email'] = $guestUser['email'];
-                $shippingAddress['contact']['phone'] = utf8_substr($guestUser['telephone'], 0, 20);
+                if (!empty($guestUser['email'])) {
+                    $shippingAddress['contact']['email'] = $guestUser['email'];
+                }
+                if (!empty($guestUser['telephone'])) {
+                    $shippingAddress['contact']['phone'] = utf8_substr($guestUser['telephone'], 0, 20);
+                }
 
             }
         }
@@ -457,88 +519,167 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
     protected function getCustomer()
     {
         $customerData = [];
+
         if ($this->customer->isLogged()) {
             $this->load->model('account/customer');
 
             $customerModel = $this->model_account_customer->getCustomer($this->customer->getId());
 
-            $customerData['firstName'] = utf8_substr($customerModel['firstname'], 0, 50);
-            $customerData['lastName'] = utf8_substr($customerModel['lastname'], 0, 50);
-            $customerData['email'] = $customerModel['email'];
-            $customerData['phone'] = utf8_substr($customerModel['telephone'], 0, 20);
+            if (!empty($customerModel['firstname'])) {
+                $customerData['firstName'] = utf8_substr($customerModel['firstname'], 0, 50);
+            }
+            if (!empty($customerModel['lastname'])) {
+                $customerData['lastName'] = utf8_substr($customerModel['lastname'], 0, 50);
+            }
+            if (!empty($customerModel['email'])) {
+                $customerData['email'] = $customerModel['email'];
+            }
+            if (!empty($customerModel['telephone'])) {
+                $customerData['phone'] = utf8_substr($customerModel['telephone'], 0, 20);
+            }
+
         } elseif (isset($this->session->data['guest'])) {
             $guestUser = $this->session->data['guest'];
 
-            $customerData['firstName'] = utf8_substr($guestUser['firstname'], 0, 50);
-            $customerData['lastName'] = utf8_substr($guestUser['lastname'], 0, 50);
-            $customerData['email'] = $guestUser['email'];
-            $customerData['phone'] = utf8_substr($guestUser['telephone'], 0, 20);
+            if (!empty($guestUser['firstname'])) {
+                $customerData['firstName'] = utf8_substr($guestUser['firstname'], 0, 50);
+            }
+
+            if (!empty($guestUser['lastname'])) {
+                $customerData['lastName'] = utf8_substr($guestUser['lastname'], 0, 50);
+            }
+
+            if (!empty($guestUser['email'])) {
+                $customerData['email'] = $guestUser['email'];
+            }
+
+            if (!empty($guestUser['telephone'])) {
+                $customerData['phone'] = utf8_substr($guestUser['telephone'], 0, 20);
+            }
+
+        } else { 
+            if (!empty($this->session->data['order_id'])) {
+                $order_id = $this->session->data['order_id'];
+                $this->load->model('checkout/order');
+                $order_info = $this->model_checkout_order->getOrder($order_id);
+
+                if ($order_info) {
+                    if (!empty($order_info['firstname'])) {
+                        $customerData['firstName'] = $order_info['firstname'];
+                    }
+                    if (!empty($order_info['lastname'])) {
+                        $customerData['lastName'] = $order_info['lastname'];
+                    }
+                    if (!empty($order_info['email'])) {
+                        $customerData['email'] = $order_info['email'];
+                    }
+                    if (!empty($order_info['telephone'])) {
+                        $customerData['phone'] = utf8_substr($order_info['telephone'], 0, 20);
+                    }
+                }
+            }
         }
 
         return $customerData;
     }
 
+
     /**
      * Process Hosted Checkout Payment Method
-     */
+    */
+
     public function processHostedCheckout()
     {
-        
         $this->load->language('extension/payment/mpgs_hosted_checkout');
         $this->load->model('extension/payment/mpgs_hosted_checkout');
 
-        $requestIndicator = $this->request->get['resultIndicator'];
-        $mpgsSuccessIndicator = $this->session->data['mpgs_hosted_checkout']['successIndicator'];
         $orderId = $this->getOrderPrefix($this->session->data['order_id']);
+        $key = 'mpgs_success_indicator_' . (int)$this->session->data['order_id'];
+        $requestIndicator = $key . $this->request->get['resultIndicator'];
 
-    
+        $query = $this->db->query("SELECT `value` FROM `" . DB_PREFIX . "setting` WHERE `key` = '" . $key . "' AND `code` = 'mpgs'");
+        $storedIndicator = $query->num_rows ? $query->row['value'] : null; 
+
+        // Retrieve order and transactions
+        $retrievedOrder = $this->retrieveOrder($orderId);
+        $txns = $retrievedOrder['transaction'] ?? [];
+        $latest_txn = end($txns);
+        $auth_txn_id = $latest_txn['authentication']['transactionId'] ?? null;
+        $result_status = strtoupper($latest_txn['result'] ?? '');
+
+        $txn = $retrievedOrder['transaction'][0];
+        $transactionId     = isset($txn['authentication']['3ds']['transactionId'])
+                                ? $txn['authentication']['3ds']['transactionId']
+                                : $txn['transaction']['id'];
+        $transactionAmount   = $txn['transaction']['amount'];
+        $transactionCurrency = $txn['transaction']['currency'];
+        $transactionStatus   = $txn['order']['status'];
+        $transactionOrderID  = $txn['order']['id'];
+        $merchantName        = $txn['merchant'];
+        $merchantId          = $txn['transaction']['acquirer']['merchantId'];
+        $customer_email      = $txn['customer']['email'];
+        $customer_name       = $txn['customer']['firstName'] . ' ' . $txn['customer']['lastName'];
+
         try {
-            if ($mpgsSuccessIndicator !== $requestIndicator) {
-                throw new Exception($this->language->get('error_indicator_mismatch'));
+            $isBrowserPayment = isset($latest_txn['browserPayment']);
+
+            // --- Browser payment check ---
+            if ($isBrowserPayment) {
+                if ($result_status !== 'SUCCESS') {
+                    throw new Exception($this->language->get('error_payment_declined'));
+                }
+            } else {
+                // --- Non-browser payment check ---
+                if (strtoupper($retrievedOrder['result'] ?? '') !== 'SUCCESS') {
+                    throw new Exception($this->language->get('error_payment_declined'));
+                }
+
+                // Additional indicator check
+                if (!$storedIndicator || (string)$storedIndicator !== (string)$requestIndicator) {
+                    $response = $this->retrieveTransaction($orderId, $auth_txn_id);
+
+                    if (!isset($response['result']) || strtoupper($response['result']) !== 'SUCCESS') {
+                        throw new Exception($this->language->get('error_indicator_mismatch'));
+                    }
+                }
             }
 
-          
-
-            $retrievedOrder = $this->retrieveOrder($orderId);
-           
-            if ($retrievedOrder['result'] !== 'SUCCESS') {
-                throw new Exception($this->language->get('error_payment_declined'));
-            }
-
-           
-
-            $txn = $retrievedOrder['transaction'][0];
-            $transactionId = isset($txn['authentication']['3ds']['transactionId']) ? $txn['authentication']['3ds']['transactionId'] : $txn['transaction']['id'];
-            $transactionAmount    =  $txn['transaction']['amount'];
-            $transactionCurrency  = $txn['transaction']['currency'];
-            $transactionStatus    = $txn['order']['status'];
-            $transactionOrderID   = $txn['order']['id'];
-            $merchantName         = $txn['merchant'];
-            $merchantId           = $txn['transaction']['acquirer']['merchantId'];
-            $customer_email       = $txn['customer']['email'];
-            $customer_name        = $txn['customer']['firstName'] . ' ' . $txn['customer']['lastName'];
-            $email_status         = "Payment" . '' . $transactionStatus ;
-            $transactionType      = "";
-
-           
+            // --- Normal flow (safe to process order) ---
             $this->processOrder($retrievedOrder, $txn);
-           
-            $this->db->query("INSERT INTO ".DB_PREFIX."mgps_order_transaction SET order_id ='".$this->session->data['order_id'] ."', oc_order_id ='".$transactionOrderID ."', transaction_id = '".$transactionId."', type = '".$transactionStatus."', merchant_name = '".$merchantName."', merchant_id = '".$merchantId."' ,status = '".$transactionStatus ."', amount = '".$transactionAmount."', date_added = NOW()");
-           
+
+            // Save transaction
+            $this->db->query("INSERT INTO " . DB_PREFIX . "mgps_order_transaction 
+                SET order_id       = '" . (int)$this->session->data['order_id'] . "',
+                    oc_order_id    = '" . $this->db->escape($transactionOrderID) . "',
+                    transaction_id = '" . $this->db->escape($transactionId) . "',
+                    type           = '" . $this->db->escape($transactionStatus) . "',
+                    merchant_name  = '" . $this->db->escape($merchantName) . "',
+                    merchant_id    = '" . $this->db->escape($merchantId) . "',
+                    status         = '" . $this->db->escape($transactionStatus) . "',
+                    amount         = '" . (float)$transactionAmount . "',
+                    date_added     = NOW()");
+
+            // Send email if enabled
             if ($this->config->get('config_mail_engine')) {
-                $this->sendCustomEmail($orderId, $customer_email,$transactionStatus, $customer_name );
+                $this->sendCustomEmail($orderId, $customer_email, $transactionStatus, $customer_name);
             }
+
+            // Clear cart and session
             $this->cart->clear();
             $this->clearTokenSaveCardSessionData();
             $this->model_extension_payment_mpgs_hosted_checkout->clearCheckoutSession();
+
+            // Redirect to success page
             $this->response->redirect($this->url->link('checkout/success', '', true));
+
         } catch (Exception $e) {
+            // On failure, log error and redirect back
             $this->session->data['error'] = $e->getMessage();
             $this->addOrderHistory($orderId, self::ORDER_FAILED, $e->getMessage());
             $this->response->redirect($this->url->link('checkout/checkout', '', true));
         }
     }
-
+    
     public function callback()
     {
         $this->load->language('extension/payment/mpgs_hosted_checkout');
@@ -1056,10 +1197,10 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
     {
         if ($retrievedOrder['status'] === 'CAPTURED') {
             $message = sprintf($this->language->get('text_payment_captured'), $txn['transaction']['id'], isset($txn['transaction']['authorizationCode']) ? $txn['transaction']['authorizationCode'] : '');
-            $orderStatusId = self::ORDER_CAPTURED;
+            $orderStatusId = $this->config->get('payment_mpgs_hosted_checkout_approved_status_id');
         } elseif ($retrievedOrder['status'] === 'AUTHORIZED') {
             $message = sprintf($this->language->get('text_payment_authorized'), $txn['transaction']['id'], isset($txn['transaction']['authorizationCode']) ? $txn['transaction']['authorizationCode'] : '');
-            $orderStatusId = $this->config->get('payment_mpgs_hosted_checkout_approved_status_id');
+            $orderStatusId = $this->config->get('payment_mpgs_hosted_checkout_pending_status_id');
         } else {
             throw new Exception($this->language->get('error_transaction_unsuccessful'));
         }
@@ -1146,19 +1287,19 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $data['customer_name'] = $customer_name;
         $store_name = $this->config->get('config_name');
         $mail = new Mail($this->config->get('config_mail_engine'));
-		$mail->parameter = $this->config->get('config_mail_parameter');
-		$mail->smtp_hostname = $this->config->get('config_mail_smtp_hostname');
-		$mail->smtp_username = $this->config->get('config_mail_smtp_username');
-		$mail->smtp_password = html_entity_decode($this->config->get('config_mail_smtp_password'), ENT_QUOTES, 'UTF-8');
-		$mail->smtp_port = $this->config->get('config_mail_smtp_port');
-		$mail->smtp_timeout = $this->config->get('config_mail_smtp_timeout');
+        $mail->parameter = $this->config->get('config_mail_parameter');
+        $mail->smtp_hostname = $this->config->get('config_mail_smtp_hostname');
+        $mail->smtp_username = $this->config->get('config_mail_smtp_username');
+        $mail->smtp_password = html_entity_decode($this->config->get('config_mail_smtp_password'), ENT_QUOTES, 'UTF-8');
+        $mail->smtp_port = $this->config->get('config_mail_smtp_port');
+        $mail->smtp_timeout = $this->config->get('config_mail_smtp_timeout');
 
-		$mail->setTo($data['receiver_address']);
-		$mail->setFrom($this->config->get('config_email'));
-		$mail->setSender(html_entity_decode($this->config->get('config_name'), ENT_QUOTES, 'UTF-8'));
-		$mail->setSubject(html_entity_decode($store_name . " - Payment " . ucwords(strtolower(str_replace('_', ' ', $subject))), ENT_QUOTES, 'UTF-8'));
-		$mail->setHtml($this->load->view('extension/payment/mpgs_email', $data));
-		$mail->send();
+        $mail->setTo($data['receiver_address']);
+        $mail->setFrom($this->config->get('config_email'));
+        $mail->setSender(html_entity_decode($this->config->get('config_name'), ENT_QUOTES, 'UTF-8'));
+        $mail->setSubject(html_entity_decode($store_name . " - Payment " . ucwords(strtolower(str_replace('_', ' ', $subject))), ENT_QUOTES, 'UTF-8'));
+        $mail->setHtml($this->load->view('extension/payment/mpgs_email', $data));
+        $mail->send();
     }
     
 }

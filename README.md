@@ -16,7 +16,7 @@ With this gateway, you don’t have to handle or store customer card/account det
 
 ## Compatibility
 
-Plugin version 1.2.0 has been tested for compatibility only with OpenCart version 3.
+Note: Plugin version 1.2.1 has been tested for compatibility only with OpenCart version 3. The supported features in this version include: Card Payments, Capture Payments, Full Refunds, and Partial Refunds.
 
 ##  Mastercard Payment Module Features
 

@@ -25,7 +25,7 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
     const API_ASIA = 'api_ap';
     const API_MTF = 'api_mtf';
     const API_OTHER = 'api_other';
-    const MODULE_VERSION = '1.2.0';
+    const MODULE_VERSION = '1.2.1';
     const API_VERSION = '100';
     const DEBUG_LOG_FILENAME = 'mpgs_gateway.log';
     const THREEDS_API_VERSION = '1.3.0';
@@ -266,5 +266,11 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
             $this->debugLog = new Log(self::DEBUG_LOG_FILENAME);
             $this->debugLog->write($message);
         }
+    }
+
+    public function getConfiguredLanguage()
+    {
+        $language = $this->config->get('payment_mpgs_hosted_checkout_locale');
+        return str_replace('-', '_', $language);
     }
 }
