@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Enhancements
 - Enhanced Compatibility: Now compatible with OpenCart version 4.1.0.x (tested only with v4.1.0.3).
+- IRIS Pay Support
 - Minor bug fixes.
 
 ## [1.3.3] - 2025-19-06
