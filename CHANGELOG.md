@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.1.1] - 2026-24-06
+### Updated
+- IRIS Pay Support.
+- Compatible only with OpenCart version 3 (recommends Opencart v3.0.41 or v3.0.5).
+
 ## [1.2.1] - 2025-10-01
 ### Bug Fixes
 - Fixed the result indicator mismatch issue for opencart version 3.

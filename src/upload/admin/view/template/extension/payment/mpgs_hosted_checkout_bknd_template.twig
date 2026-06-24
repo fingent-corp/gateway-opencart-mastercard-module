@@ -1,5 +1,5 @@
 {#
-    Copyright (c) 2020 Mastercard
+    Copyright (c) 2026 Mastercard
  
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -266,20 +266,6 @@
                          </div>
                          <div class="tab-pane" id="tab-additional">
                             <div class="form-group">
-                                <label class="col-sm-2 control-label" for="input-lang">
-                                    <span data-toggle="tooltip" title="{{ help_locale }}">{{ entry_locale }}</span>
-                                </label>
-                                <div class="col-sm-10">
-                                    <select name="payment_mpgs_hosted_checkout_locale" id="input-lang" class="form-control">
-                                        <option value="" {% if not payment_mpgs_hosted_checkout_locale %}selected{% endif %}>-- Select Language --</option>
-                                        {% for code, name in mpgs_languages %}
-                                            <option value="{{ code }}" {% if payment_mpgs_hosted_checkout_locale == code %}selected{% endif %}>{{ name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            
-                             <div class="form-group">
                                  <label class="col-sm-2 control-label" for="input-debug"><span data-toggle="tooltip" title="{{ help_debug_mode }}">{{ entry_debug }}</span></label>
                                  <div class="col-sm-10">
                                      <select name="payment_mpgs_hosted_checkout_debug" id="input-debug" class="form-control">
@@ -292,28 +278,28 @@
                                          {% endif %}
                                      </select>
                                  </div>
-                             </div>
-                             <div class="form-group">
-                                 <label class="col-sm-2 control-label" for="order-id-prefix"><span data-toggle="tooltip" title="{{ help_order_id_prefix }}">{{ entry_order_id_prefix }}</span></label>
-                                 <div class="col-sm-10">
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="order-id-prefix"><span data-toggle="tooltip" title="{{ help_order_id_prefix }}">{{ entry_order_id_prefix }}</span></label>
+                                <div class="col-sm-10">
                                      <input type="text" name="payment_mpgs_hosted_checkout_order_id_prefix" value="{{ payment_mpgs_hosted_checkout_order_id_prefix }}" id="order-id-prefix" class="form-control" />
-                                 </div>
-                             </div>
-                             <div class="form-group">
-                                 <label class="col-sm-2 control-label" for="approved-status">{{ entry_approved_status }}</label>
-                                 <div class="col-sm-10">
-                                     <select name="payment_mpgs_hosted_checkout_approved_status_id" id="approved-status" class="form-control">
-                                         {% for order_status in order_statuses %}
-                                             {% if order_status.order_status_id == payment_mpgs_hosted_checkout_approved_status_id %}
-                                                 <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
-                                             {% else %}
-                                                 <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
-                                             {% endif %}
-                                         {% endfor %}
-                                     </select>
-                                 </div>
-                             </div>
-                             <div class="form-group">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="approved-status">{{ entry_approved_status }}</label>
+                                <div class="col-sm-10">
+                                    <select name="payment_mpgs_hosted_checkout_approved_status_id" id="approved-status" class="form-control">
+                                        {% for order_status in order_statuses %}
+                                            {% if order_status.order_status_id == payment_mpgs_hosted_checkout_approved_status_id %}
+                                                <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
+                                            {% else %}
+                                                <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
                                  <label class="col-sm-2 control-label" for="declined-status">{{ entry_declined_status }}</label>
                                  <div class="col-sm-10">
                                      <select name="payment_mpgs_hosted_checkout_declined_status_id" id="declined-status" class="form-control">

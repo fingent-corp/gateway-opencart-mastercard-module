@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020 Mastercard
+ * Copyright (c) 2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
     const API_ASIA = 'api_ap';
     const API_MTF = 'api_mtf';
     const API_OTHER = 'api_other';
-    const MODULE_VERSION = '1.2.1';
+    const MODULE_VERSION = '1.2.1.1';
     const API_VERSION = '100';
     const DEBUG_LOG_FILENAME = 'mpgs_gateway.log';
     const THREEDS_API_VERSION = '1.3.0';
@@ -177,7 +177,7 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
      */
     public function buildPartnerSolutionId()
     {
-        return 'OC_' . VERSION . '_ONTAP_' . self::MODULE_VERSION;
+        return 'OC_' . VERSION . '_FINGENT_' . self::MODULE_VERSION;
     }
 
     /**
@@ -266,11 +266,5 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
             $this->debugLog = new Log(self::DEBUG_LOG_FILENAME);
             $this->debugLog->write($message);
         }
-    }
-
-    public function getConfiguredLanguage()
-    {
-        $language = $this->config->get('payment_mpgs_hosted_checkout_locale');
-        return str_replace('-', '_', $language);
     }
 }

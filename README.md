@@ -30,6 +30,11 @@ Easily and securely accept both credit and debit card payments. This feature wor
    - **Google Pay (Supported in Hosted Checkout Only)**<br/>
 With Google Pay, customers can quickly and easily pay on the hosted checkout page. To enable this option, ensure your Merchant Identification Number (MID) is configured for Google Pay. This makes payments smooth and hassle-free, allowing customers to complete transactions with just a few taps.
 
+   - **IRIS Pay (Supported in Hosted Checkout Only)**<br/>
+Give your customers the flexibility of IRIS Pay for quick and secure payments right from the hosted checkout page. To get started, ensure your MID is enabled for IRIS Pay processing. Once live, this integration ensures a streamlined, worry-free checkout experience, making it easier than ever for shoppers to authorize payments with minimal effort.
+
+Note: IRIS Pay is only available via full-page redirect when using the Purchase Method within Hosted Checkout.
+
 **2. Checkout and Payment Integration -** This feature focuses on the method of collecting payment details from customers:
 
    - **Hosted Checkout**<br/>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020 Mastercard
+ * Copyright (c) 2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
     public function dropTable()
     {
         $this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "mpgs_hpf_token`");
-        $this->db->query("DROP TABLE IF EXISTS `".DB_PREFIX."mgps_order_transaction`;");
     }
 
     public function addEvents()
@@ -131,18 +130,5 @@ class ModelExtensionPaymentMpgsHostedCheckout extends Model
     
     public function isTestModeEnabled(){
         return $this->config->get('payment_mpgs_hosted_checkout_test');
-    }
-
-    public function getLanguages() {
-        return [
-            'en' => 'English',
-            'ar' => 'العربية (Arabic)',
-            'zh_HK' => '香港中文 (Hong Kong Chinese)',
-            'zh_TW' => '繁體中文 (Traditional Chinese)',
-            'zh_CN' => '繁體中文 (Simplified Chinese)',
-            'el' => 'Ελληνικά (Greek)',
-        ];
-    }
-    
-    
+    }    
 }

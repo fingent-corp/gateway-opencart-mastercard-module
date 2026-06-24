@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020 Mastercard
+ * Copyright (c) 2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 {
     const API_VERSION = '100';
-    const MODULE_VERSION = '1.2.1';
+    const MODULE_VERSION = '1.2.1.1';
     const API_AMERICA = 'api_na';
     const API_EUROPE = 'api_eu';
     const API_ASIA = 'api_ap';
@@ -33,8 +33,6 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 
     public function index()
     {
-      
-       
         $this->load->language('extension/payment/mpgs_hosted_checkout');
         $this->load->model('extension/payment/mpgs_hosted_checkout');
         $this->document->setTitle($this->language->get('heading_title'));
@@ -209,12 +207,6 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
             $data['payment_mpgs_hosted_checkout_sort_order'] = $this->config->get('payment_mpgs_hosted_checkout_sort_order');
         }
 
-        if (isset($this->request->post['payment_mpgs_hosted_checkout_locale'])) {
-            $data['payment_mpgs_hosted_checkout_locale'] = $this->request->post['payment_mpgs_hosted_checkout_locale'];
-        } else {
-            $data['payment_mpgs_hosted_checkout_locale'] = $this->config->get('payment_mpgs_hosted_checkout_locale');
-        }
-
         if (isset($this->request->post['payment_mpgs_hosted_checkout_debug'])) {
             $data['payment_mpgs_hosted_checkout_debug'] = $this->request->post['payment_mpgs_hosted_checkout_debug'];
         } else {
@@ -269,11 +261,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
-        $data['footer'] = $this->load->controller('common/footer');
-        $data['mpgs_languages'] = $this->model_extension_payment_mpgs_hosted_checkout->getLanguages();
-
-
-      
+        $data['footer'] = $this->load->controller('common/footer');     
 
         $this->response->setOutput($this->load->view('extension/payment/mpgs_hosted_checkout_bknd_template', $data));
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020 Mastercard
+ * Copyright (c) 2026 Mastercard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,13 +198,6 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
     protected function getInteraction()
     {
         $this->load->model('extension/payment/mpgs_hosted_checkout');
-        $default_language = $this->config->get('config_language');
-        $plugin_locale = $this->config->get('payment_mpgs_hosted_checkout_locale');
-        if (!empty($plugin_locale) && $plugin_locale !== $default_language) {
-            $checkout_locale = $plugin_locale;
-        } else {
-            $checkout_locale = $default_language;
-        }
         $name = $this->config->get('config_name');
         $integration['merchant']['name'] = (strlen($name) > 40) ? substr($name, 0, 40) : $name;
         $integration['operation'] = $this->model_extension_payment_mpgs_hosted_checkout->getPaymentAction();
@@ -212,8 +205,6 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $integration['displayControl']['shipping'] = 'HIDE';
         $integration['displayControl']['billingAddress'] = 'HIDE';
         $integration['displayControl']['customerEmail'] = 'HIDE';
-        $integration['locale'] =  $checkout_locale ?: 'en';
-
 
         return $integration;
     }
@@ -228,21 +219,7 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $orderData['reference'] = $orderId;
         $orderData['currency'] = $this->session->data['currency'];
         $orderData['notificationUrl'] = $this->url->link('extension/payment/mpgs_hosted_checkout/callback', '', true);
-        $lang = $this->model_extension_payment_mpgs_hosted_checkout->getConfiguredLanguage();
-        $translations = [
-            'en'    => 'Ordered goods',
-            'ar'    => 'البضائع المطلوبة',
-            'zh_HK' => '已訂購商品',
-            'zh_TW' => '已訂購商品',
-            'zh_CN' => '已订购商品',
-            'el'    => 'Παραγγελθέντα αγαθά',
-        ];
-        if (!empty($lang) && isset($translations[$lang])) {
-            $orderData['description'] = $translations[$lang];
-        } else {
-            $orderData['description'] = 'Ordered goods';
-        }
-
+        $orderData['description'] = 'Ordered goods';
 
         return $orderData;
     }
@@ -593,8 +570,8 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
         $this->load->language('extension/payment/mpgs_hosted_checkout');
         $this->load->model('extension/payment/mpgs_hosted_checkout');
 
-        $orderId = $this->getOrderPrefix($this->session->data['order_id']);
-        $key = 'mpgs_success_indicator_' . (int)$this->session->data['order_id'];
+        $orderId    = $this->getOrderPrefix($this->session->data['order_id']);
+        $key        = 'mpgs_success_indicator_' . (int)$this->session->data['order_id'];
         $requestIndicator = $key . $this->request->get['resultIndicator'];
 
         $query = $this->db->query("SELECT `value` FROM `" . DB_PREFIX . "setting` WHERE `key` = '" . $key . "' AND `code` = 'mpgs'");
@@ -602,13 +579,12 @@ class ControllerExtensionPaymentMpgsHostedCheckout extends Controller
 
         // Retrieve order and transactions
         $retrievedOrder = $this->retrieveOrder($orderId);
-        $txns = $retrievedOrder['transaction'] ?? [];
-        $latest_txn = end($txns);
-        $auth_txn_id = $latest_txn['authentication']['transactionId'] ?? null;
-        $result_status = strtoupper($latest_txn['result'] ?? '');
-
-        $txn = $retrievedOrder['transaction'][0];
-        $transactionId     = isset($txn['authentication']['3ds']['transactionId'])
+        $txns           = $retrievedOrder['transaction'] ?? [];
+        $latest_txn     = end($txns);
+        $auth_txn_id    = $latest_txn['authentication']['transactionId'] ?? null;
+        $result_status  = strtoupper($latest_txn['result'] ?? '');
+        $txn            = $latest_txn;
+        $transactionId  = isset($txn['authentication']['3ds']['transactionId'])
                                 ? $txn['authentication']['3ds']['transactionId']
                                 : $txn['transaction']['id'];
         $transactionAmount   = $txn['transaction']['amount'];
