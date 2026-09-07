@@ -1,13 +1,15 @@
-var scriptTag = document.querySelector('script[src*="mgps.js"]');
-var jsonData = scriptTag.getAttribute('data-sessionid');
+const scriptTag = document.querySelector('script[src*="mgps.js"]');
+const jsonData = scriptTag.getAttribute('data-sessionid');
 
-var sessionKeysToClear = [];
+// Keys written to browser sessionStorage by the MPGS Checkout.js library.
+// All entries are removed before each new checkout session is initialised so
+// a stale session from a previous payment cannot be reused by the library.
+const sessionKeysToClear = ['HostedCheckout_sessionId'];
+
 function cleanupBrowserSession() {
-    var sessionKey, i;
-    for (i = 0; i < sessionKeysToClear.length; i++) {
-        sessionKey = sessionKeysToClear[i];
-        if (sessionStorage.key(sessionKey)) {
-             sessionStorage.removeItem(sessionKey);
+    for (const sessionKey of sessionKeysToClear) {
+        if (sessionStorage.getItem(sessionKey) !== null) {
+            sessionStorage.removeItem(sessionKey);
         }
     }
 }
@@ -19,10 +21,9 @@ function errorCallback(error) {
 }
 
 function loadScript(src, onloadCallback) {
-    var script = document.createElement('script');
+    const script = document.createElement('script');
     script.src = src;
-    script.onload = function() {
-        checkoutLoaded = true;
+    script.onload = () => {
         onloadCallback();
     };
     document.head.appendChild(script);
@@ -30,7 +31,7 @@ function loadScript(src, onloadCallback) {
 
 function clearEmbedTarget() {
    
-    var embedTarget = document.getElementById('embed-target');
+    const embedTarget = document.getElementById('embed-target');
     embedTarget.innerHTML = ''; 
 }
 

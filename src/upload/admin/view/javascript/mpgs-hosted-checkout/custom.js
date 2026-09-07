@@ -1,147 +1,252 @@
-/*
- * Copyright (c) 2026 Mastercard
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+  Copyright (c) 2020 Mastercard
+ 
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
  */
 
-$(function ($) {
+(function ($, window, document) {
     'use strict';
-    if ($('#tab-mpgs_custom_tab').length > 0) {
-        $('a[href="#tab-mpgs_custom_tab"]').tab('show');
-    }
-    var mpgs_admin_config = {
-        init: function () {
-            var liveMerchantId = $('#live-merchant-container'),
-                livePassword = $('#live-password-container'),
-                liveWebhookSecret = $('#live-webhook-container'),
-                testMerchantId = $('#test-merchant-container'),
-                testPassword = $('#test-password-container'),
-                testWebhookSecret = $('#test-webhook-container'),
-                gateway_url = $('#custom-url-container'),
-                saved_cards = $('#saved-cards-container'),
-                hc_type = $('#hc-type-container');
 
-            $('#test-mode').on('change', function () {
-                if ($(this).val() === '1') {
-                    testMerchantId.show();
-                    testPassword.show();
-                    testWebhookSecret.show();
-                    testMerchantId.addClass('required');
-                    testPassword.addClass('required');
+    const MPGSAdmin = {
 
-                    // Hide Live Merchant ID, Password & Webhook Secret
-                    liveMerchantId.hide();
-                    livePassword.hide();
-                    liveWebhookSecret.hide();
-                    liveMerchantId.removeClass('required');
-                    livePassword.removeClass('required');
-                } else {
-                    liveMerchantId.show();
-                    livePassword.show();
-                    liveWebhookSecret.show();
-                    liveMerchantId.addClass('required');
-                    livePassword.addClass('required');
+        cache: {},
+        credentials: {},
 
-                    // Hide Test Merchant ID, Password & Webhook Secret
-                    testMerchantId.hide();
-                    testPassword.hide();
-                    testWebhookSecret.hide();
-                    testMerchantId.removeClass('required');
-                    testPassword.removeClass('required');
-                }
-            }).change();
+        init() {
+            this.cacheDom();
+            this.activateTab();
+            this.bindEvents();
+            this.initDefaultStates();
+        },
 
-            $('#select-api-gateway').on('change', function () {
-                if ($(this).val() === 'api_other') {
-                    gateway_url.show();
-                } else {
-                    gateway_url.hide();
-                }
-            }).change();
+        cacheDom() {
+            this.cache = {
+                tab: $('#tab-mpgs_custom_tab'),
 
-            $('#integration-model').on('change', function () {
-                if ($(this).val() === 'hostedcheckout') {
-                    saved_cards.hide();
-                    hc_type.show();
-                } else {
-                    hc_type.hide();
-                    saved_cards.show();
-                }
-            }).change();
-        }
-    };
-    mpgs_admin_config.init();
+                testMode: $('#test-mode'),
+                apiGateway: $('#select-api-gateway'),
+                hcType: $('#hc-type'),
+                merchantInfo: $('#merchant-info'),
+                integrationModel: $('#integration-model'),
 
-    $(document).ready(function() {
-        var userToken = $('script[src$="custom.js"]').data('user-token');
-        $("#partialrefundButton").on("click", function() {
-            var maxrefundAmount = parseInt($(this).data("amount"));
-            $('.refund_reason_container').show();
-            $("#refundInput").val(""); 
-            $("#refundBoxContainer").show();
-            $('.payment_button_wrapper').hide();
-            $('.refund_form_wrapper').show();
-            $('#partialrefundButton,#refundButton').hide();
-            $('#partail_refund_form,.action_wrapper').show();
-        });
+                liveMerchant: $('#live-merchant-container'),
+                livePassword: $('#live-password-container'),
+                liveWebhook: $('#live-webhook-container'),
 
-    
-        $('#refundInput').on("keypress", function(event) {
-            const allowedCharsRegex = /^[0-9.]+$/;
-            const enteredChar = String.fromCharCode(event.which);
-            if (!allowedCharsRegex.test(enteredChar)) {
-            event.preventDefault();
+                testMerchant: $('#test-merchant-container'),
+                testPassword: $('#test-password-container'),
+                testWebhook: $('#test-webhook-container'),
+
+                gatewayUrl: $('#custom-url-container'),
+                savedCards: $('#saved-cards-container'),
+                hcTypeContainer: $('#hc-type-container'),
+
+                merchantInfoToggle: $('#merchant-info-toggle-container'),
+                merchantInfoSection: $('#merchant-information-section'),
+                browserWarning: $('.browser-warning'),
+
+                partialRefundBtn: $('#partialrefundButton'),
+                refundBtn: $('#refundButton'),
+                refundForm: $('#partail_refund_form'),
+                refundInput: $('#refundInput'),
+                refundReason: $('.refundReason'),
+                refundAmount: $('.refund_amount'),
+                cancelRefundBtn: $('.cancel_refund_button'),
+
+                refundBox: $('#refundBoxContainer'),
+                refundReasonWrap: $('.refund_reason_container'),
+                paymentButtons: $('.payment_button_wrapper'),
+                refundFormWrap: $('.refund_form_wrapper'),
+                actionWrapper: $('.action_wrapper'),
+                charCount: $('#charCount')
+            };
+        },
+
+        activateTab() {
+            if (this.cache.tab.length) {
+                $('a[href="#tab-mpgs_custom_tab"]').tab('show');
             }
-        });
+        },
 
-        $('#partail_refund_form').on('submit', function(event) {
-            event.preventDefault(); 
-        });
+        bindEvents() {
+            this.cache.testMode.on('change', this.toggleTestMode.bind(this));
+            this.cache.apiGateway.on('change', this.toggleGatewayUrl.bind(this));
+            this.cache.hcType.on('change', this.toggleHCType.bind(this));
+            this.cache.merchantInfo.on('change', this.toggleMerchantInfo.bind(this));
+            this.cache.integrationModel.on('change', this.toggleIntegrationModel.bind(this));
 
-        $('.cancel_refund_button').click(function(){
-            $('#refundButton,#partialrefundButton').show();
-            $('#partail_refund_form,.action_wrapper').hide();
-        });
-        
-        $('.refundReason').on('input', function() {
-            var maxLength = 500;
-            var currentLength = $(this).val().length;
-            var remaining = maxLength - currentLength;
-    
-            if (remaining >= 0) {
-                $('#charCount').text(remaining);
+            this.cache.partialRefundBtn.on('click', this.openPartialRefund.bind(this));
+            this.cache.refundInput.on('keypress', this.allowNumbersOnly);
+            this.cache.refundForm.on('submit', e => e.preventDefault());
+            this.cache.cancelRefundBtn.on('click', this.cancelRefund.bind(this));
+            this.cache.refundReason.on('input', this.updateCharCount.bind(this));
+            this.cache.refundAmount.on('input', this.validateRefundAmount);
+        },
+
+        initDefaultStates() {
+            this.cache.testMode.trigger('change');
+            this.cache.apiGateway.trigger('change');
+            this.cache.hcType.trigger('change');
+            this.cache.merchantInfo.trigger('change');
+            this.cache.integrationModel.trigger('change');
+        },
+
+        toggleTestMode() {
+            const isTest = this.cache.testMode.val() === '1';
+
+            if (isTest) {
+                // Test mode is ON - show test credentials, hide live credentials
+                this.toggleFields(
+                    [this.cache.testMerchant, this.cache.testPassword, this.cache.testWebhook],
+                    [this.cache.liveMerchant, this.cache.livePassword, this.cache.liveWebhook]
+                );
+                this.setCredentialVariables('test');
             } else {
-                var text = $(this).val().substring(0, maxLength);
-                $(this).val(text);
+                // Test mode is OFF - show live credentials, hide test credentials
+                this.toggleFields(
+                    [this.cache.liveMerchant, this.cache.livePassword, this.cache.liveWebhook],
+                    [this.cache.testMerchant, this.cache.testPassword, this.cache.testWebhook]
+                );
+                this.setCredentialVariables('live');
             }
-        });
+        },
 
-        $(".refund_amount").on("input", function () {
-            // Remove any non-numeric characters except the decimal point
-            $(this).val($(this).val().replace(/[^0-9.]/g, ''));
-    
-            // Ensure that there's only one decimal point
-            if ($(this).val().split('.').length > 2) {
-                $(this).val($(this).val().slice(0, -1)); // Remove the last character
+        setCredentialVariables(mode) {
+
+            if (mode === 'test') {
+                // Test mode variables
+                this.credentials = {
+                    mode: 'test',
+                    merchantId: $('#payment_mpgs_hosted_checkout_test_merchant_id').val() || '',
+                    apiPassword: $('#payment_mpgs_hosted_checkout_test_api_password').val() || '',
+                    webhookSecret: $('#payment_mpgs_hosted_checkout_test_notification_secret').val() || '',
+                    environment: 'sandbox'
+                };
+            } else if (mode === 'live') {
+                // Live mode variables
+                this.credentials = {
+                    mode: 'live',
+                    merchantId: $('#payment_mpgs_hosted_checkout_live_merchant_id').val() || '',
+                    apiPassword: $('#payment_mpgs_hosted_checkout_live_api_password').val() || '',
+                    webhookSecret: $('#payment_mpgs_hosted_checkout_live_notification_secret').val() || '',
+                    environment: 'production'
+                };
             }
-    
-            // Limit to a maximum of two decimal places
-            const parts = $(this).val().split('.');
+        },
+
+        getActiveCredentials() {
+
+            return this.credentials;
+        },
+
+        getCurrentMode() {
+
+            return this.cache.testMode.val() === '1' ? 'test' : 'live';
+        },
+
+        toggleGatewayUrl() {
+            this.cache.gatewayUrl.toggle(this.cache.apiGateway.val() === 'api_other');
+        },
+
+        toggleHCType() {
+            const isModal = this.cache.hcType.val() === 'modal';
+
+            this.cache.browserWarning.toggle(isModal);
+            this.cache.merchantInfoToggle.toggle(!isModal);
+            
+            if (!isModal) {
+                // Switching to redirect - restore merchant section based on merchant_info value
+                this.toggleMerchantInfo();
+            } else {
+                // Switching to modal - hide merchant info section
+                this.cache.merchantInfoSection.hide();
+            }
+
+            if (isModal) {
+                setTimeout(() => this.cache.browserWarning.fadeOut(), 30000);
+            }
+        },
+
+        toggleMerchantInfo() {
+            const shouldShow = this.cache.merchantInfo.val() === '1';
+            const isMerchantInfoVisible = this.cache.merchantInfoToggle.is(':visible');
+            
+            // Only toggle if the merchant info toggle container is visible (not in modal mode)
+            if (isMerchantInfoVisible) {
+                this.cache.merchantInfoSection.toggle(shouldShow);
+            }
+        },
+
+        toggleIntegrationModel() {
+            const isHosted = this.cache.integrationModel.val() === 'hostedcheckout';
+
+            this.cache.savedCards.toggle(!isHosted);
+            this.cache.hcTypeContainer.toggle(isHosted);
+        },
+
+        toggleFields(showEls, hideEls) {
+            showEls.forEach(el => el.show());
+            hideEls.forEach(el => el.hide());
+        },
+
+        openPartialRefund() {
+            this.cache.refundInput.val('');
+            this.cache.refundReasonWrap.show();
+            this.cache.refundBox.show();
+            this.cache.paymentButtons.hide();
+            this.cache.refundFormWrap.show();
+            this.cache.partialRefundBtn.add(this.cache.refundBtn).hide();
+            this.cache.refundForm.add(this.cache.actionWrapper).show();
+        },
+
+        cancelRefund() {
+            this.cache.refundBtn.add(this.cache.partialRefundBtn).show();
+            this.cache.refundForm.add(this.cache.actionWrapper).hide();
+        },
+
+        allowNumbersOnly(e) {
+            if (!/^[0-9.]$/.test(String.fromCharCode(e.which))) {
+                e.preventDefault();
+            }
+        },
+
+        updateCharCount() {
+            const max = 500;
+            const val = this.cache.refundReason.val();
+            const remaining = max - val.length;
+
+            if (remaining >= 0) {
+                this.cache.charCount.text(remaining);
+            } else {
+                this.cache.refundReason.val(val.substring(0, max));
+            }
+        },
+
+        validateRefundAmount() {
+            let value = $(this).val().replace(/[^0-9.]/g, '');
+            const parts = value.split('.');
+
+            if (parts.length > 2) {
+                value = value.slice(0, -1);
+            }
             if (parts[1] && parts[1].length > 2) {
                 parts[1] = parts[1].substring(0, 2);
-                $(this).val(parts.join('.'));
+                value = parts.join('.');
             }
-        });
-        
-    });
-});
+            $(this).val(value);
+        }
+    };
+
+    $(document).ready(() => MPGSAdmin.init());
+
+})(jQuery, window, document);

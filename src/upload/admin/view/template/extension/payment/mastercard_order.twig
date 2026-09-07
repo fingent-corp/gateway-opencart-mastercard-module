@@ -83,12 +83,18 @@
 			<div class="refund_form_wrapper" style="display: none;">
 				<div id="refundBoxContainer" class="refund_container">
 					<form id="partail_refund_form" class="partial_refund_form">
-						<label>Amount</label>
-						<input type="text" id="refundInput" placeholder="Enter an Amount"
-							class="form-control refund_amount">
-						<label>Reason</label>
-						<textarea class="refundReason" rows="10" cols="50"></textarea>
-						<label>Remaining Characters: <span id="charCount">50</span> </label>
+						<div class="form-group">
+							<label for="refundInput">Amount</label>
+							<input type="text" id="refundInput" placeholder="Enter an Amount"
+								class="form-control refund_amount">
+						</div>
+						<div class="form-group">
+							<label for="refundReasonText">Reason</label>
+							<textarea class="refundReason" id="refundReasonText" rows="10" cols="50"></textarea>
+						</div>
+						<div class="char-counter">
+							Remaining Characters: <span id="charCount">50</span>
+						</div>
 				</div>
 
 				<div class="action_wrapper">
@@ -123,12 +129,18 @@
 			<div class="refund_form_wrapper" style="display: none;">
 				<div id="refundBoxContainer" class="refund_container">
 					<form id="partail_refund_form" class="partial_refund_form">
-						<label>Amount</label>
-						<input type="text" id="refundInput" placeholder="Enter an Amount"
-							class="form-control refund_amount">
-						<label>Reason</label>
-						<textarea class="refundReason" rows="10" cols="50"></textarea>
-						<label>Remaining Characters: <span id="charCount">500</span> </label>
+						<div class="form-group">
+							<label for="refundInput">Amount</label>
+							<input type="text" id="refundInput" placeholder="Enter an Amount"
+								class="form-control refund_amount">
+						</div>
+						<div class="form-group">
+							<label for="refundReasonText">Reason</label>
+							<textarea class="refundReason" id="refundReasonText" rows="10" cols="50"></textarea>
+						</div>
+						<div class="char-counter">
+							Remaining Characters: <span id="charCount">50</span>
+						</div>
 				</div>
 
 				<div class="action_wrapper">
@@ -222,7 +234,7 @@
 			var capture_amount = $(this).attr('data-amount');
 			var user_token = $(this).attr('data-id');
 			var message_container = $('#mgps_transaction_msg_');
-			var refundurlWithUserToken = 'index.php?route=extension/mastercard/payment/mastercard.RequestRefund&user_token={{ user_token }}';
+			var refundurlWithUserToken = 'index.php?route=extension/mastercard/payment/mastercard/requestRefund&user_token={{ user_token }}';
 
 			$.ajax({
 				type: 'POST',
@@ -271,7 +283,7 @@
 			var reason = $('.refundReason').val();
 
 			var maxRefund = $("#partialrefundButton").data("amount");
-			var urlWithUserToken = 'index.php?route=extension/mastercard/payment/mastercard.RequestPartialRefund&user_token={{ user_token }}';
+			var urlWithUserToken = 'index.php?route=extension/mastercard/payment/mastercard/requestPartialRefund&user_token={{ user_token }}';
 			var fullrefundButton = $('refundButton');
 			$('#refundButton').hide();
 			$('#partailRefund').val('Loading...');

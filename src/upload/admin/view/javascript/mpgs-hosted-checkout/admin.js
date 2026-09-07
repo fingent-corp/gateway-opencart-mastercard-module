@@ -1,6 +1,5 @@
 $(document).ready(function () {
-    const $gatewaySelect = $('#select-api-gateway');
-    const $customUrlContainer = $('#custom-url-container');
+
     const $sendMerchantCheckbox = $('#input-status');
     const $merchantInfoBlock = $('.merchant-information-data-items');
     
@@ -15,7 +14,6 @@ $(document).ready(function () {
     
     const $hcTypeSelect = $('#hc-type');
     const $customMerchantInfoContainer = $('.merchant-info-parent-wrapper');
-    const $merchantInfoWrapper = $('#merchant-info-wrapper'); 
     
     
     function toggleCredentialFields() {
@@ -55,7 +53,7 @@ $(document).ready(function () {
 
   
     $('#input-status').on('change', function() {
-        var $statusLabel = $(this).closest('.form-check').find('.status-label'); 
+        const $statusLabel = $(this).closest('.form-check').find('.status-label'); 
         if ($(this).prop('checked')) {
             $statusLabel.text('Enabled');
         } else {
@@ -65,7 +63,7 @@ $(document).ready(function () {
 
    
     function initializeCheckboxStatus() {
-        var $statusLabel = $('#input-status').closest('.form-check').find('.status-label');
+        const $statusLabel = $('#input-status').closest('.form-check').find('.status-label');
         if ($('#input-status').prop('checked')) {
             $statusLabel.text('Enabled');
         } else {
@@ -75,7 +73,7 @@ $(document).ready(function () {
 
 
     $('#payment_mastercard_status').on('change', function() {
-        var $statusLabel = $(this).closest('.form-check').find('.status-label'); 
+        const $statusLabel = $(this).closest('.form-check').find('.status-label'); 
         if ($(this).prop('checked')) {
             $statusLabel.text('Enabled');
         } else {
@@ -85,7 +83,7 @@ $(document).ready(function () {
 
     
     function initializePaymentMastercardStatus() {
-        var $statusLabel = $('#payment_mastercard_status').closest('.form-check').find('.status-label');
+        const $statusLabel = $('#payment_mastercard_status').closest('.form-check').find('.status-label');
         if ($('#payment_mastercard_status').prop('checked')) {
             $statusLabel.text('Enabled');
         } else {

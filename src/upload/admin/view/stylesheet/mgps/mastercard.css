@@ -40,3 +40,7 @@ span.img_loading_captureButton .capture_Spinner {
 .version-info .module-notification-wrapper{
     margin-top: 10px;
 }
+.action_section {
+    display: flex;
+    gap: 20px;
+}
