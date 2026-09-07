@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-07-09
+### Updated
+- Compatible only with OpenCart version 3.
+- Updated Configuration Page
+- Now Pass Merchant Branding Information
+- Notify merchants when a new version of the plugin is released to Git or Marketplace
+- Introduced Refund and Void Status fields in plugin Backend
+- Google Pay Support
+- Paypal support (In Hosted Checkout Redirect method only)
+- Capture Active status of plugin -As part of plugin analytics, the plugin will start capturing download count from GitHub and the active installation count. The Active count, Store Name, Store URL, and the Country configured in the OpenCart Admin page will be captured once the Test Mode is set as No and the Live Merchant ID and Live API Password are saved in the configuration page.
+
+
 ## [1.2.1.1] - 2026-24-06
 ### Updated
 - IRIS Pay Support.

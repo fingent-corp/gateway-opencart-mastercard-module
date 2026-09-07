@@ -16,7 +16,7 @@ With this gateway, you don’t have to handle or store customer card/account det
 
 ## Compatibility
 
-Note: Plugin version 1.2.1 has been tested for compatibility only with OpenCart version 3. The supported features in this version include: Card Payments, Capture Payments, Full Refunds, and Partial Refunds.
+Note: Plugin versions 1.2.1 & 1.2.2 have been tested for compatibility only with OpenCart version 3. The major supported features in this version include: Card Payments, Capture Payments, Full Refunds, Partial Refunds, Google Pay and passing merchant branding information .
 
 ##  Mastercard Payment Module Features
 
@@ -29,6 +29,9 @@ Easily and securely accept both credit and debit card payments. This feature wor
 
    - **Google Pay (Supported in Hosted Checkout Only)**<br/>
 With Google Pay, customers can quickly and easily pay on the hosted checkout page. To enable this option, ensure your Merchant Identification Number (MID) is configured for Google Pay. This makes payments smooth and hassle-free, allowing customers to complete transactions with just a few taps.
+
+   - **PayPal (Supported in Hosted Checkout Only)**<br/>
+With PayPal, customers can make payments quickly and effortlessly through the hosted checkout page. To use this option, ensure that your MID is set up for PayPal transactions. Once enabled, this feature provides a seamless and hassle-free payment experience, allowing customers to complete their purchases with just a few simple taps.
 
    - **IRIS Pay (Supported in Hosted Checkout Only)**<br/>
 Give your customers the flexibility of IRIS Pay for quick and secure payments right from the hosted checkout page. To get started, ensure your MID is enabled for IRIS Pay processing. Once live, this integration ensures a streamlined, worry-free checkout experience, making it easier than ever for shoppers to authorize payments with minimal effort.
@@ -50,12 +53,17 @@ AVS helps prevent fraud by checking the billing address provided during a paymen
    - **Capture Payments**<br/>
 This feature lets you manually process payments for authorized orders directly from your system. It gives you more control over how payments are handled.
 
+- **Void Transaction**<br/>
+The void transaction feature lets you cancel an order before it’s invoiced or completed. This option is usually available for ‘Authorize’ transactions, where the funds are reserved but not yet charged or billed. 
+
 - **Full Refunds**<br/>
 You can refund the entire amount of the transaction back to the customer's account. This is helpful when a complete order needs to be cancelled or returned. 
 
 - **Partial Refunds**<br/>
 This feature lets you refund only part of an order, giving the customer the specific amount they are entitled to.
 
+## Disclaimer!
+Starting from version 1.2.2, the plugin will collect analytics data, including the plugin download count from GitHub and the active installation count. The Active count, Store Name, Store URL, and the Country configured in the OpenCart Admin page will be captured once the Test Mode is set as No and the Live Merchant ID and Live API Password are saved in the configuration page.
 
 ## Documentation
 The official documentation for this module is available on the [Wiki site](https://mpgs.fingent.wiki/enterprise/opencart-mastercard-gateway/overview-and-feature-support).
@@ -64,4 +72,4 @@ The official documentation for this module is available on the [Wiki site](https
 For more information, please refer to the [Wiki documentation](https://mpgs.fingent.wiki/enterprise/opencart-mastercard-gateway/installation).
 
 ## Support
-For additional support, please visit the [Support Portal](https://mpgsfgs.atlassian.net/servicedesk/customer/user/login?destination=portals).
+For additional support, please visit the [Support Portal](https://mpgsfgs.atlassian.net/servicedesk/customer/user/login?destination=portals).
